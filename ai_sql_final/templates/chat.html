@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SQL Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ─── Theme Variables ─── */
+:root {
+  --bg-base: #080c14;
+  --bg-surface: #0d1117;
+  --bg-header: rgba(10,14,23,0.95);
+  --bg-input: #080c14;
+  --bg-code: #0a0e17;
+  --bg-table-head: #111827;
+  --border-soft: rgba(255,255,255,0.06);
+  --border-mid: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.09);
+  --text-primary: #e6edf3;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-faint: #334155;
+  --text-faintest: #1e293b;
+  --bubble-user-bg: linear-gradient(135deg, rgba(30,64,175,0.2), rgba(49,46,129,0.2));
+  --bubble-user-border: rgba(99,102,241,0.2);
+  --bubble-ai-bg: rgba(255,255,255,0.03);
+  --bubble-ai-border: rgba(255,255,255,0.07);
+  --input-bg: rgba(255,255,255,0.03);
+  --input-border: rgba(255,255,255,0.08);
+  --chat-item-hover: rgba(255,255,255,0.04);
+  --chat-item-active-bg: rgba(99,102,241,0.1);
+  --chat-item-icon-bg: rgba(255,255,255,0.05);
+  --chat-item-icon-border: rgba(255,255,255,0.08);
+  --scrollbar-color: #1e2736;
+  --sql-preview-bg: rgba(10,14,23,0.9);
+  --sql-header-bg: rgba(99,102,241,0.08);
+  --result-table-bg: #0a0e17;
+  --upload-border: rgba(255,255,255,0.1);
+  --upload-hover-border: rgba(52,211,153,0.45);
+  --info-bar-bg: rgba(52,211,153,0.07);
+  --info-bar-border: rgba(52,211,153,0.2);
+  --col-type-color: #a78bfa;
+  --shadow-color: rgba(0,0,0,0.4);
+  --modal-bg: #0d1117;
+  --modal-border: rgba(255,255,255,0.09);
+  --shadow-heavy: rgba(0,0,0,0.6);
+  --step-bg: rgba(255,255,255,0.03);
+  --step-border: rgba(255,255,255,0.07);
+  --overlay-bg: rgba(0,0,0,0.7);
+  --sidebar-action-hover: rgba(255,255,255,0.08);
+  --btn-sm-bg: rgba(255,255,255,0.05);
+  --btn-sm-border: rgba(255,255,255,0.1);
+  --badge-user-bg: rgba(129,140,248,0.08);
+  --badge-user-border: rgba(129,140,248,0.2);
+}
+
+html[data-theme="light"] {
+  --bg-base: #f4f6fb;
+  --bg-surface: #ffffff;
+  --bg-header: rgba(255,255,255,0.97);
+  --bg-input: #f4f6fb;
+  --bg-code: #f0f2f8;
+  --bg-table-head: #eef0f7;
+  --border-soft: rgba(0,0,0,0.07);
+  --border-mid: rgba(0,0,0,0.09);
+  --border-strong: rgba(0,0,0,0.1);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --text-faintest: #c1c8d4;
+  --bubble-user-bg: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1));
+  --bubble-user-border: rgba(99,102,241,0.25);
+  --bubble-ai-bg: rgba(0,0,0,0.02);
+  --bubble-ai-border: rgba(0,0,0,0.08);
+  --input-bg: rgba(255,255,255,0.85);
+  --input-border: rgba(0,0,0,0.1);
+  --chat-item-hover: rgba(0,0,0,0.03);
+  --chat-item-active-bg: rgba(99,102,241,0.08);
+  --chat-item-icon-bg: rgba(0,0,0,0.04);
+  --chat-item-icon-border: rgba(0,0,0,0.07);
+  --scrollbar-color: #cbd5e1;
+  --sql-preview-bg: rgba(240,242,248,0.95);
+  --sql-header-bg: rgba(99,102,241,0.07);
+  --result-table-bg: #f8f9fc;
+  --upload-border: rgba(0,0,0,0.1);
+  --upload-hover-border: rgba(16,185,129,0.5);
+  --info-bar-bg: rgba(16,185,129,0.06);
+  --info-bar-border: rgba(16,185,129,0.2);
+  --col-type-color: #7c3aed;
+  --shadow-color: rgba(0,0,0,0.08);
+  --modal-bg: #ffffff;
+  --modal-border: rgba(0,0,0,0.1);
+  --shadow-heavy: rgba(0,0,0,0.15);
+  --step-bg: rgba(0,0,0,0.03);
+  --step-border: rgba(0,0,0,0.07);
+  --overlay-bg: rgba(0,0,0,0.45);
+  --sidebar-action-hover: rgba(0,0,0,0.06);
+  --btn-sm-bg: rgba(0,0,0,0.04);
+  --btn-sm-border: rgba(0,0,0,0.1);
+  --badge-user-bg: rgba(99,102,241,0.08);
+  --badge-user-border: rgba(99,102,241,0.2);
+}
+
+/* ─── Reset & Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Sora', system-ui, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+  transition: background 0.25s, color 0.25s;
+}
+
+/* ─── Theme Toggle ─── */
+.theme-toggle {
+  width: 36px; height: 20px;
+  background: rgba(99,102,241,0.2);
+  border: 1px solid rgba(99,102,241,0.35);
+  border-radius: 20px; cursor: pointer;
+  position: relative; flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+  display: flex; align-items: center; padding: 2px;
+}
+.theme-toggle:hover { background: rgba(99,102,241,0.3); }
+.theme-toggle-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #818cf8;
+  transition: transform 0.2s, background 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; line-height: 1;
+}
+html[data-theme="light"] .theme-toggle-thumb {
+  transform: translateX(16px);
+  background: #f59e0b;
+}
+.theme-toggle-wrap {
+  display: flex; align-items: center; gap: 7px;
+}
+.theme-toggle-label {
+  font-size: 0.72rem; color: var(--text-muted);
+  white-space: nowrap; user-select: none; cursor: pointer;
+  transition: color 0.2s;
+}
+
+/* ─── Header ─── */
+.header {
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 0 20px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; backdrop-filter: blur(12px);
+  box-shadow: 0 1px 20px var(--shadow-color);
+  transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 16px rgba(99,102,241,0.4);
+}
+.header-title { font-size: 0.98rem; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; transition: color 0.25s; }
+.header-title span { color: #818cf8; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.db-badge {
+  background: rgba(34,197,94,0.09); border: 1px solid rgba(34,197,94,0.22);
+  color: #22c55e; padding: 4px 12px; border-radius: 20px;
+  font-size: 0.72rem; display: flex; align-items: center; gap: 5px;
+}
+html[data-theme="light"] .db-badge { color: #16a34a; background: rgba(22,163,74,0.08); border-color: rgba(22,163,74,0.25); }
+.db-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 6px #22c55e; animation: pulse 2s ease infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+.user-badge {
+  background: var(--badge-user-bg); border: 1px solid var(--badge-user-border);
+  color: #818cf8; padding: 4px 12px; border-radius: 20px; font-size: 0.72rem;
+  transition: background 0.25s, border-color 0.25s;
+}
+.btn-sm {
+  background: var(--btn-sm-bg); border: 1px solid var(--btn-sm-border);
+  color: var(--text-muted); padding: 5px 12px; border-radius: 8px;
+  font-size: 0.74rem; cursor: pointer; transition: all 0.2s; font-family: 'Sora', sans-serif;
+}
+.btn-sm:hover { background: var(--chat-item-hover); color: var(--text-secondary); }
+
+/* ─── Main Layout ─── */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── Sidebar ─── */
+.sidebar {
+  width: 260px; background: var(--bg-surface);
+  border-right: 1px solid var(--border-soft);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  transition: background 0.25s, border-color 0.25s;
+}
+.sidebar-top { padding: 14px 14px 8px; }
+.sidebar-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 700; margin-bottom: 10px; padding: 0 2px; transition: color 0.25s; }
+
+.new-chat-btn {
+  width: 100%; padding: 9px 14px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.12));
+  border: 1px solid rgba(99,102,241,0.25);
+  color: #818cf8; border-radius: 10px;
+  font-size: 0.84rem; cursor: pointer; font-family: 'Sora', sans-serif;
+  display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+  font-weight: 500;
+}
+html[data-theme="light"] .new-chat-btn { color: #6366f1; }
+.new-chat-btn:hover { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2)); border-color: rgba(99,102,241,0.45); }
+
+.chat-list { flex: 1; overflow-y: auto; padding: 6px 10px; }
+.chat-list::-webkit-scrollbar { width: 4px; }
+.chat-list::-webkit-scrollbar-thumb { background: var(--scrollbar-color); border-radius: 4px; }
+
+.chat-item {
+  padding: 9px 10px; border-radius: 10px; cursor: pointer;
+  display: flex; align-items: center; gap: 9px; margin-bottom: 3px;
+  transition: all 0.15s; position: relative;
+  border: 1px solid transparent;
+}
+.chat-item:hover { background: var(--chat-item-hover); }
+.chat-item.active { background: var(--chat-item-active-bg); border-color: rgba(99,102,241,0.2); }
+.chat-item-icon {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  background: var(--chat-item-icon-bg); border: 1px solid var(--chat-item-icon-border);
+  display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+  transition: background 0.25s, border-color 0.25s;
+}
+.chat-item.active .chat-item-icon { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); }
+.chat-item-info { flex: 1; min-width: 0; }
+.chat-item-name {
+  font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
+  transition: color 0.25s;
+}
+.chat-item.active .chat-item-name { color: #c7d2fe; }
+html[data-theme="light"] .chat-item.active .chat-item-name { color: #4f46e5; }
+.chat-item-db { font-size: 0.69rem; color: var(--text-faint); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.25s; }
+.chat-item.active .chat-item-db { color: #4c5272; }
+
+.chat-actions { display: none; align-items: center; gap: 2px; flex-shrink: 0; }
+.chat-item:hover .chat-actions, .chat-item.active .chat-actions { display: flex; }
+.chat-action-btn {
+  width: 22px; height: 22px; border-radius: 6px; border: none;
+  background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; color: var(--text-faint); padding: 0;
+}
+.chat-action-btn:hover { background: var(--sidebar-action-hover); color: var(--text-secondary); }
+.chat-action-btn.fav-active { color: #f59e0b; }
+.chat-action-btn.del:hover { background: rgba(239,68,68,0.12); color: #f87171; }
+
+.fav-section-label { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-faint); font-weight: 700; padding: 8px 12px 4px; transition: color 0.25s; }
+
+.sidebar-bottom { padding: 10px 14px; border-top: 1px solid var(--border-soft); transition: border-color 0.25s; }
+.disconnect-btn {
+  width: 100%; padding: 8px; background: transparent;
+  border: 1px solid rgba(239,68,68,0.2); color: var(--text-muted);
+  border-radius: 8px; font-size: 0.76rem; cursor: pointer; transition: all 0.2s;
+  font-family: 'Sora', sans-serif;
+}
+.disconnect-btn:hover { background: rgba(239,68,68,0.08); color: #f87171; border-color: rgba(239,68,68,0.35); }
+
+/* ─── Chat Area ─── */
+.chat-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.no-chat-placeholder {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 32px; text-align: center;
+}
+.no-chat-placeholder .icon {
+  width: 64px; height: 64px; border-radius: 18px;
+  background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.no-chat-placeholder h2 { color: var(--text-primary); font-size: 1.2rem; font-weight: 600; transition: color 0.25s; }
+.no-chat-placeholder p { color: var(--text-faint); font-size: 0.87rem; max-width: 320px; line-height: 1.7; transition: color 0.25s; }
+.no-chat-placeholder .start-btn {
+  padding: 11px 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 0.9rem; font-weight: 600; font-family: 'Sora', sans-serif; cursor: pointer;
+  transition: all 0.2s; box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+}
+.no-chat-placeholder .start-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 24px 28px;
+  display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth;
+}
+.chat-messages::-webkit-scrollbar { width: 5px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--scrollbar-color); border-radius: 4px; }
+
+/* ─── Messages ─── */
+.msg { display: flex; gap: 12px; max-width: 820px; }
+.msg.user { flex-direction: row-reverse; margin-left: auto; }
+.msg.assistant { margin-right: auto; }
+.avatar { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; }
+.avatar.ai { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+.avatar.user-av { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+.bubble { max-width: calc(100% - 44px); padding: 13px 17px; border-radius: 14px; line-height: 1.65; font-size: 0.89rem; transition: background 0.25s, border-color 0.25s; }
+.msg.user .bubble { background: var(--bubble-user-bg); border: 1px solid var(--bubble-user-border); border-top-right-radius: 4px; color: var(--text-primary); }
+.msg.assistant .bubble { background: var(--bubble-ai-bg); border: 1px solid var(--bubble-ai-border); border-top-left-radius: 4px; color: var(--text-secondary); }
+.bubble pre { background: var(--bg-code); border: 1px solid var(--border-mid); border-radius: 8px; padding: 12px 14px; margin: 10px 0; overflow-x: auto; font-size: 0.81rem; line-height: 1.5; font-family: 'JetBrains Mono', monospace; transition: background 0.25s; }
+.bubble code { font-family: 'JetBrains Mono', monospace; background: rgba(129,140,248,0.1); color: #818cf8; padding: 1px 5px; border-radius: 4px; font-size: 0.83em; }
+html[data-theme="light"] .bubble code { background: rgba(99,102,241,0.1); color: #4f46e5; }
+.bubble pre code { background: none; color: var(--text-primary); padding: 0; }
+
+/* SQL Preview */
+.sql-preview { margin-top: 14px; background: var(--sql-preview-bg); border: 1px solid rgba(99,102,241,0.25); border-radius: 12px; overflow: hidden; transition: background 0.25s; }
+.sql-preview-header { background: var(--sql-header-bg); padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(99,102,241,0.15); }
+.sql-preview-header span { font-size: 0.72rem; color: #818cf8; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.sql-code { padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.81rem; color: #818cf8; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+html[data-theme="light"] .sql-code { color: #4f46e5; }
+.sql-actions { padding: 10px 14px; border-top: 1px solid rgba(99,102,241,0.12); display: flex; gap: 8px; align-items: center; }
+.execute-btn {
+  padding: 8px 18px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; border: none; border-radius: 8px; font-size: 0.83rem; font-weight: 600;
+  font-family: 'Sora', sans-serif; cursor: pointer;
+  display: flex; align-items: center; gap: 7px; transition: all 0.2s;
+  box-shadow: 0 2px 12px rgba(99,102,241,0.3);
+}
+.execute-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.execute-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.execute-btn.done { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.35); color: #22c55e; cursor: default; box-shadow: none; }
+html[data-theme="light"] .execute-btn.done { color: #16a34a; background: rgba(22,163,74,0.1); border-color: rgba(22,163,74,0.3); }
+
+/* Results */
+.result-block { margin-top: 8px; }
+.result-success { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2); color: #22c55e; border-radius: 8px; padding: 9px 13px; font-size: 0.82rem; }
+html[data-theme="light"] .result-success { color: #16a34a; background: rgba(22,163,74,0.07); border-color: rgba(22,163,74,0.2); }
+.result-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #f87171; border-radius: 8px; padding: 9px 13px; font-size: 0.82rem; }
+html[data-theme="light"] .result-error { color: #dc2626; background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.2); }
+.result-table-wrap { overflow-x: auto; margin-top: 8px; border-radius: 8px; }
+.result-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; background: var(--result-table-bg); border: 1px solid var(--border-soft); transition: background 0.25s; }
+.result-table th { background: var(--bg-table-head); color: #60a5fa; padding: 7px 11px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-soft); transition: background 0.25s; }
+html[data-theme="light"] .result-table th { color: #2563eb; }
+.result-table td { padding: 6px 11px; border-bottom: 1px solid var(--border-soft); color: var(--text-secondary); transition: color 0.25s; }
+.result-table tr:last-child td { border-bottom: none; }
+.result-table tr:hover td { background: var(--chat-item-hover); }
+
+/* ─── Chart / Visualization Panel ─── */
+.chart-toolbar { display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.chart-toolbar select, .chart-toolbar label { font-size:0.78rem; color:var(--text-secondary); background:var(--bg-code); border:1px solid var(--border-soft); border-radius:6px; padding:4px 8px; }
+.chart-toolbar select:focus { outline:none; border-color:#818cf8; }
+.chart-btn { font-size:0.75rem; padding:4px 10px; border-radius:6px; border:1px solid rgba(129,140,248,0.3); background:rgba(129,140,248,0.08); color:#818cf8; cursor:pointer; transition:all 0.15s; }
+.chart-btn:hover { background:rgba(129,140,248,0.18); border-color:#818cf8; }
+.chart-btn.active { background:rgba(129,140,248,0.22); border-color:#818cf8; color:#c4b5fd; }
+.chart-panel { margin-top:10px; background:var(--bg-code); border:1px solid var(--border-soft); border-radius:10px; padding:16px; display:none; }
+.chart-panel.visible { display:block; }
+.chart-canvas-wrap { position:relative; width:100%; max-height:320px; }
+.chart-canvas-wrap canvas { max-height:300px; }
+.result-count { color: var(--text-faint); font-size: 0.72rem; margin-top: 6px; transition: color 0.25s; }
+.msg-time { font-size: 0.65rem; color: var(--text-faint); margin-top: 5px; text-align: right; transition: color 0.25s; }
+.msg.assistant .msg-time { text-align: left; }
+
+/* Typing */
+.typing { display: flex; align-items: center; gap: 5px; padding: 4px 0; }
+.typing span { width: 7px; height: 7px; background: #6366f1; border-radius: 50%; animation: bounce 1.2s ease infinite; }
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-7px); } }
+
+/* Welcome */
+.welcome { text-align: center; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.welcome-icon { width: 68px; height: 68px; border-radius: 18px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); display: flex; align-items: center; justify-content: center; }
+.welcome h2 { color: var(--text-primary); font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; transition: color 0.25s; }
+.welcome p { color: var(--text-faint); max-width: 400px; line-height: 1.7; font-size: 0.87rem; transition: color 0.25s; }
+.welcome-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+.chip { background: var(--chat-item-icon-bg); border: 1px solid var(--border-mid); color: var(--text-muted); padding: 7px 16px; border-radius: 20px; font-size: 0.79rem; cursor: pointer; transition: all 0.2s; }
+.chip:hover { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); color: #818cf8; }
+
+/* Chat name bar */
+.chat-title-bar {
+  padding: 9px 20px; border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  background: rgba(10,14,23,0.6); transition: background 0.25s, border-color 0.25s;
+}
+html[data-theme="light"] .chat-title-bar { background: rgba(240,242,248,0.8); }
+.chat-current-name { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); transition: color 0.25s; }
+.chat-current-db { font-size: 0.73rem; color: var(--text-faint); margin-left: auto; display: flex; align-items: center; gap: 5px; transition: color 0.25s; }
+.db-tag { background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); color: #818cf8; padding: 2px 9px; border-radius: 6px; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; }
+html[data-theme="light"] .db-tag { color: #4f46e5; }
+
+/* ─── Input Area ─── */
+.chat-input-area { padding: 14px 24px 18px; border-top: 1px solid var(--border-soft); background: var(--bg-input); transition: background 0.25s, border-color 0.25s; }
+.input-wrap {
+  display: flex; gap: 8px; align-items: flex-end;
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 14px; padding: 9px 12px;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.25s;
+}
+.input-wrap:focus-within { border-color: rgba(99,102,241,0.45); box-shadow: 0 0 0 3px rgba(99,102,241,0.08); }
+#userInput {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text-primary); font-size: 0.9rem; resize: none;
+  line-height: 1.5; max-height: 120px; font-family: 'Sora', sans-serif;
+  transition: color 0.25s;
+}
+#userInput::placeholder { color: var(--text-faint); }
+
+.execute-input-btn {
+  height: 36px; padding: 0 14px; border-radius: 9px;
+  background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.25);
+  color: #818cf8; font-size: 0.78rem; font-weight: 600; font-family: 'Sora', sans-serif;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+  opacity: 0.4; pointer-events: none;
+}
+.execute-input-btn.enabled {
+  opacity: 1; pointer-events: all;
+  background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25));
+  border-color: rgba(99,102,241,0.5);
+  box-shadow: 0 0 12px rgba(99,102,241,0.2);
+  animation: glow-pulse 2s ease infinite;
+}
+@keyframes glow-pulse { 0%,100% { box-shadow: 0 0 8px rgba(99,102,241,0.2); } 50% { box-shadow: 0 0 18px rgba(99,102,241,0.4); } }
+.execute-input-btn.enabled:hover { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+.kbd { background: var(--chat-item-icon-bg); border: 1px solid var(--border-mid); padding: 1px 4px; border-radius: 4px; font-size: 0.66rem; font-family: 'JetBrains Mono', monospace; }
+
+.send-btn {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;
+  box-shadow: 0 2px 12px rgba(99,102,241,0.3);
+}
+.send-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.input-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
+.input-hint { color: var(--text-faintest); font-size: 0.69rem; transition: color 0.25s; }
+.input-hint strong { color: var(--text-faint); }
+.clear-btn { background: none; border: none; color: var(--text-faint); font-size: 0.69rem; cursor: pointer; transition: color 0.2s; }
+.clear-btn:hover { color: #ef4444; }
+
+/* ─── Modals ─── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--overlay-bg); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--modal-bg); border: 1px solid var(--modal-border);
+  border-radius: 18px; width: 100%;
+  box-shadow: 0 30px 80px var(--shadow-heavy);
+  transform: translateY(16px); transition: transform 0.2s, background 0.25s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-head {
+  padding: 20px 22px 16px; border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: space-between;
+  transition: border-color 0.25s;
+}
+.modal-head h2 { color: var(--text-primary); font-size: 0.98rem; font-weight: 600; transition: color 0.25s; }
+.modal-close {
+  background: var(--chat-item-icon-bg); border: 1px solid var(--border-mid);
+  color: var(--text-muted); width: 28px; height: 28px; border-radius: 8px;
+  cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; padding: 0;
+}
+.modal-close:hover { background: rgba(239,68,68,0.12); color: #f87171; border-color: rgba(239,68,68,0.3); }
+.modal-body { padding: 20px 22px; }
+.modal-footer { padding: 14px 22px 18px; border-top: 1px solid var(--border-soft); display: flex; justify-content: flex-end; gap: 10px; }
+
+#newChatModal .modal { max-width: 420px; }
+.modal-field { margin-bottom: 16px; }
+.modal-field label { display: block; color: var(--text-muted); font-size: 0.74rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 7px; transition: color 0.25s; }
+.modal-field input, .modal-field select {
+  width: 100%; background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 10px; padding: 10px 13px; color: var(--text-primary);
+  font-size: 0.88rem; font-family: 'Sora', sans-serif; outline: none; transition: border-color 0.2s, background 0.25s, color 0.25s;
+}
+.modal-field input:focus, .modal-field select:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.12); }
+.modal-field input::placeholder { color: var(--text-faintest); }
+.modal-field select option { background: var(--modal-bg); }
+.modal-hint { color: var(--text-faint); font-size: 0.72rem; margin-top: 5px; transition: color 0.25s; }
+
+.btn-cancel { padding: 9px 18px; background: var(--chat-item-icon-bg); border: 1px solid var(--border-mid); color: var(--text-muted); border-radius: 9px; font-size: 0.84rem; font-family: 'Sora', sans-serif; cursor: pointer; transition: all 0.2s; }
+.btn-cancel:hover { color: var(--text-secondary); }
+.btn-primary { padding: 9px 20px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; border-radius: 9px; font-size: 0.84rem; font-weight: 600; font-family: 'Sora', sans-serif; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 12px rgba(99,102,241,0.3); }
+.btn-primary:hover { opacity: 0.9; }
+
+.rename-input {
+  background: var(--input-bg); border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 6px; padding: 2px 7px; color: #c7d2fe; font-size: 0.82rem;
+  font-family: 'Sora', sans-serif; outline: none; width: 130px;
+}
+html[data-theme="light"] .rename-input { color: #4f46e5; }
+
+/* ─── CSV Modal ─── */
+.csv-overlay {
+  position: fixed; inset: 0; z-index: 1500;
+  background: var(--overlay-bg); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.csv-overlay.open { opacity: 1; pointer-events: all; }
+.csv-modal {
+  background: var(--modal-bg); border: 1px solid var(--modal-border);
+  border-radius: 18px; width: 100%; max-width: 820px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 30px 80px var(--shadow-heavy);
+  transform: translateY(20px); transition: transform 0.25s, background 0.25s;
+}
+.csv-overlay.open .csv-modal { transform: translateY(0); }
+.modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.modal-title { display: flex; align-items: center; gap: 10px; }
+.modal-title h2 { color: var(--text-primary); font-size: 1rem; font-weight: 600; transition: color 0.25s; }
+.modal-icon { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(16,185,129,0.2)); border: 1px solid rgba(52,211,153,0.3); display: flex; align-items: center; justify-content: center; }
+.modal-body-csv { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.modal-body-csv::-webkit-scrollbar { width: 4px; }
+.modal-body-csv::-webkit-scrollbar-thumb { background: var(--scrollbar-color); border-radius: 4px; }
+.step-bar { display: flex; margin-bottom: 22px; background: var(--step-bg); border: 1px solid var(--step-border); border-radius: 10px; overflow: hidden; transition: background 0.25s; }
+.step-item { flex: 1; padding: 9px 14px; font-size: 0.77rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; cursor: default; border-right: 1px solid var(--border-soft); transition: all 0.2s; }
+.step-item:last-child { border-right: none; }
+.step-item.active { background: rgba(52,211,153,0.08); color: #34d399; }
+.step-item.done { color: #22c55e; }
+html[data-theme="light"] .step-item.done { color: #16a34a; }
+.step-num { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0; background: var(--chat-item-icon-bg); color: var(--text-muted); }
+.step-item.active .step-num { background: rgba(52,211,153,0.2); color: #34d399; }
+.step-item.done .step-num { background: rgba(34,197,94,0.2); color: #22c55e; }
+.upload-zone { border: 2px dashed var(--upload-border); border-radius: 14px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.upload-zone:hover,.upload-zone.drag-over { border-color: var(--upload-hover-border); background: rgba(52,211,153,0.04); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { margin: 0 auto 12px; width: 48px; height: 48px; border-radius: 12px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); display: flex; align-items: center; justify-content: center; }
+.upload-zone h3 { color: var(--text-primary); font-size: 0.95rem; margin-bottom: 6px; transition: color 0.25s; }
+.upload-zone p { color: var(--text-muted); font-size: 0.82rem; transition: color 0.25s; }
+.cfg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.cfg-field label { display: block; color: var(--text-muted); font-size: 0.78rem; margin-bottom: 5px; }
+.cfg-field input, .cfg-field select { width: 100%; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 9px 12px; color: var(--text-primary); font-size: 0.85rem; outline: none; font-family: 'Sora', sans-serif; transition: background 0.25s, border-color 0.25s, color 0.25s; }
+.cfg-field input:focus, .cfg-field select:focus { border-color: #34d399; }
+.cfg-field select option { background: var(--modal-bg); }
+.toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--chat-item-icon-bg); border-radius: 20px; cursor: pointer; transition: 0.2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #94a3b8; border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + .toggle-slider { background: rgba(52,211,153,0.3); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(16px); background: #34d399; }
+.toggle-label { color: var(--text-muted); font-size: 0.8rem; transition: color 0.25s; }
+.toggle-label strong { color: #818cf8; }
+html[data-theme="light"] .toggle-label strong { color: #4f46e5; }
+.col-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 16px; }
+.col-table th { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 10px; border-bottom: 1px solid var(--border-soft); text-align: left; font-weight: 600; }
+.col-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-soft); }
+.col-table tr:last-child td { border-bottom: none; }
+.col-name-input { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 5px 8px; color: var(--text-secondary); font-size: 0.8rem; width: 100%; outline: none; font-family: 'Sora', sans-serif; transition: background 0.25s, border-color 0.25s; }
+.col-name-input:focus { border-color: #34d399; }
+.type-select { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 5px 8px; color: var(--col-type-color); font-size: 0.78rem; outline: none; cursor: pointer; width: 100%; font-family: 'Sora', sans-serif; transition: background 0.25s; }
+.type-select option { background: var(--modal-bg); }
+.orig-col { color: var(--text-faint); font-size: 0.74rem; }
+.sample-val { color: var(--text-faint); font-size: 0.74rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preview-wrap { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: 10px; margin-bottom: 16px; }
+.preview-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.preview-table th { background: var(--bg-table-head); color: #60a5fa; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; border-bottom: 1px solid var(--border-soft); transition: background 0.25s; }
+html[data-theme="light"] .preview-table th { color: #2563eb; }
+.preview-table td { padding: 6px 10px; border-bottom: 1px solid var(--border-soft); color: var(--text-secondary); white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.preview-table tr:last-child td { border-bottom: none; }
+.preview-table tr:hover td { background: var(--chat-item-hover); }
+.null-val { color: var(--text-faint); font-style: italic; }
+.info-bar { background: var(--info-bar-bg); border: 1px solid var(--info-bar-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; transition: background 0.25s; }
+.info-bar span { color: var(--text-muted); font-size: 0.79rem; }
+.info-bar strong { color: #34d399; }
+html[data-theme="light"] .info-bar strong { color: #059669; }
+.tag { background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2); color: #a78bfa; padding: 2px 8px; border-radius: 6px; font-size: 0.73rem; }
+html[data-theme="light"] .tag { color: #7c3aed; background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.2); }
+.csv-footer { padding: 14px 24px 18px; border-top: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.csv-footer-left { color: var(--text-faint); font-size: 0.78rem; transition: color 0.25s; }
+.csv-footer-right { display: flex; gap: 10px; }
+.btn-back { padding: 9px 18px; background: var(--chat-item-icon-bg); border: 1px solid var(--border-mid); color: var(--text-muted); border-radius: 8px; font-size: 0.84rem; cursor: pointer; font-family: 'Sora', sans-serif; }
+.btn-next { padding: 9px 22px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; border-radius: 8px; font-size: 0.84rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: all 0.2s; font-family: 'Sora', sans-serif; }
+.btn-next:hover { opacity: 0.9; }
+.btn-next:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-import { padding: 9px 22px; background: linear-gradient(135deg, #059669, #10b981); color: #fff; border: none; border-radius: 8px; font-size: 0.84rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 7px; font-family: 'Sora', sans-serif; }
+.btn-import:hover { opacity: 0.9; }
+.btn-import:disabled { opacity: 0.45; cursor: not-allowed; }
+.import-success { text-align: center; padding: 32px 16px; }
+.import-success .big-check { width: 60px; height: 60px; border-radius: 50%; background: rgba(34,197,94,0.15); border: 2px solid rgba(34,197,94,0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 1.6rem; }
+.import-success h3 { color: var(--text-primary); font-size: 1.1rem; margin-bottom: 8px; transition: color 0.25s; }
+.import-success p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; transition: color 0.25s; }
+.import-error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; border-radius: 10px; padding: 14px 16px; font-size: 0.84rem; line-height: 1.6; }
+html[data-theme="light"] .import-error-box { color: #dc2626; background: rgba(220,38,38,0.07); border-color: rgba(220,38,38,0.25); }
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+html[data-theme="light"] .spinner { border-color: rgba(0,0,0,0.15); border-top-color: #6366f1; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="header-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/>
+      </svg>
+    </div>
+    <span class="header-title">AI <span>SQL</span> Assistant</span>
+  </div>
+  <div class="header-right">
+    <!-- ── Theme Toggle ── -->
+    <div class="theme-toggle-wrap" onclick="toggleTheme()" title="Toggle light / dark mode">
+      <span class="theme-toggle-label" id="themeLabel">Dark</span>
+      <button class="theme-toggle" aria-label="Toggle theme">
+        <div class="theme-toggle-thumb" id="themeThumb">🌙</div>
+      </button>
+    </div>
+    <div class="db-badge"><div class="db-dot"></div> MySQL Connected</div>
+    <div class="user-badge">{{ user_email }}</div>
+    <a href="/logout"><button class="btn-sm">Sign Out</button></a>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-label">Conversations</div>
+      <button class="new-chat-btn" onclick="openNewChatModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        New Chat
+      </button>
+    </div>
+
+    <div class="chat-list" id="chatList"></div>
+
+    <div class="sidebar-bottom">
+      <button class="new-chat-btn" style="margin-bottom:8px;color:#34d399;border-color:rgba(52,211,153,0.3);background:linear-gradient(135deg,rgba(52,211,153,0.07),rgba(16,185,129,0.07));" onclick="openCsvModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import CSV → Table
+      </button>
+      <a href="/learn" style="display:block;margin-bottom:8px;">
+        <button class="new-chat-btn" style="width:100%;color:#f59e0b;border-color:rgba(245,158,11,0.3);background:linear-gradient(135deg,rgba(245,158,11,0.07),rgba(251,191,36,0.07));">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          🎓 SQL Learning Lab
+        </button>
+      </a>
+      <form action="/disconnect" method="POST">
+        <button type="submit" class="disconnect-btn">⚡ Disconnect Database</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Chat Area -->
+  <div class="chat-container" id="chatContainer">
+
+    <div class="no-chat-placeholder" id="noChatPlaceholder">
+      <div class="icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/>
+        </svg>
+      </div>
+      <h2>AI SQL Assistant</h2>
+      <p>Select a conversation from the sidebar, or start a new one to begin querying your database.</p>
+      <button class="start-btn" onclick="openNewChatModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;margin-right:6px;vertical-align:-2px;"><path d="M12 5v14M5 12h14"/></svg>
+        New Chat
+      </button>
+    </div>
+
+    <div id="activeChatView" style="display:none;flex:1;flex-direction:column;overflow:hidden;display:none;">
+      <div class="chat-title-bar">
+        <span class="chat-current-name" id="activeChatName">Chat</span>
+        <div class="chat-current-db" id="activeChatDbBadge"></div>
+        <button class="btn-sm" onclick="clearCurrentHistory()" style="margin-left:8px;">Clear</button>
+      </div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-area">
+        <div class="input-wrap">
+          <textarea id="userInput" rows="1" placeholder="Describe what you want to do with your database..."></textarea>
+          <button class="execute-input-btn" id="executeInputBtn" onclick="triggerExecuteLatest()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>
+            Execute
+            <span class="kbd">Alt+↵</span>
+          </button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+              <path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <span class="input-hint">Enter to send · Shift+Enter new line · <strong>Alt+Enter</strong> to execute query</span>
+          <button class="clear-btn" onclick="clearCurrentHistory()">🗑 Clear history</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- New Chat Modal -->
+<div class="modal-overlay" id="newChatModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.5" style="display:inline;margin-right:8px;vertical-align:-2px;"><path d="M12 5v14M5 12h14"/></svg>
+        New Conversation
+      </h2>
+      <button class="modal-close" onclick="closeNewChatModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Chat Name</label>
+        <input type="text" id="newChatName" placeholder="e.g. Sales Analysis, User Table Setup..." maxlength="60">
+        <div class="modal-hint">Give this conversation a descriptive name</div>
+      </div>
+      <div class="modal-field">
+        <label>Database <span style="color:var(--text-faint);font-weight:400;text-transform:none;">(optional)</span></label>
+        <select id="newChatDb">
+          <option value="">-- Select a database --</option>
+        </select>
+        <div class="modal-hint">You can change this later by renaming the chat</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeNewChatModal()">Cancel</button>
+      <button class="btn-primary" onclick="createNewChat()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;margin-right:5px;vertical-align:-1px;"><path d="M12 5v14M5 12h14"/></svg>
+        Create Chat
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV Modal -->
+<div class="csv-overlay" id="csvModal">
+  <div class="csv-modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        <div class="modal-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <h2>Import CSV → MySQL Table</h2>
+      </div>
+      <button class="modal-close" onclick="closeCsvModal()">✕</button>
+    </div>
+    <div class="modal-body-csv" id="csvModalBody">
+      <div class="step-bar" id="stepBar">
+        <div class="step-item active" id="step1Ind"><div class="step-num">1</div> Upload File</div>
+        <div class="step-item" id="step2Ind"><div class="step-num">2</div> Configure &amp; Preview</div>
+        <div class="step-item" id="step3Ind"><div class="step-num">3</div> Clean Data</div>
+        <div class="step-item" id="step3Ind"><div class="step-num">3</div> Import</div>
+      </div>
+      <div id="csvStep1">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="csvFileInput" accept=".csv" onchange="handleFileSelect(this)">
+          <div class="upload-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <h3>Drop your CSV file here</h3><p>or click to browse</p>
+          <div style="color:var(--text-faint);font-size:0.75rem;margin-top:8px;">Supports CSV with comma, semicolon, tab, or pipe delimiters</div>
+        </div>
+        <div id="uploadStatus" style="margin-top:14px;"></div>
+      </div>
+      <div id="csvStep2" style="display:none;">
+        <div class="info-bar" id="csvInfoBar"></div>
+        <div class="cfg-row">
+          <div class="cfg-field"><label>Table Name</label><input type="text" id="tableNameInput" placeholder="my_table"></div>
+          <div class="cfg-field">
+            <label>If table already exists</label>
+            <select id="ifExistsSelect">
+              <option value="error">Show error</option>
+              <option value="replace">Replace (drop + recreate)</option>
+              <option value="append">Append rows</option>
+            </select>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="addIdToggle" checked><span class="toggle-slider"></span></label>
+          <span class="toggle-label">Add auto-increment <strong>id</strong> column as primary key</span>
+        </div>
+        <div style="color:var(--text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:700;">Column Configuration</div>
+        <table class="col-table" id="colTable">
+          <thead><tr><th>#</th><th>Column Name</th><th>Data Type</th><th>Original CSV Header</th><th>Sample Value</th></tr></thead>
+          <tbody id="colTableBody"></tbody>
+        </table>
+        <div style="color:var(--text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:700;">Data Preview (first 10 rows)</div>
+        <div class="preview-wrap"><table class="preview-table"><thead id="previewHead"></thead><tbody id="previewBody"></tbody></table></div>
+      </div>
+      <!-- Step 3: Data Preprocessing -->
+      <div id="csvStep2b" style="display:none;">
+        <div id="prepStatsBar" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;"></div>
+        <div style="color:#0b2951;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;font-weight:700;">Cleaning Operations</div>
+        <div style="display:grid;gap:10px;">
+          <label style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px 14px;cursor:pointer;">
+            <input type="checkbox" id="prepDuplicates" style="width:16px;height:16px;accent-color:#6366f1;">
+            <div><div style="color:#1e2736;font-size:0.88rem;font-weight:600;">Remove Duplicate Rows</div><div style="color:#64748b;font-size:0.78rem;margin-top:2px;">Removes rows where every column value is identical</div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px 14px;cursor:pointer;">
+            <input type="checkbox" id="prepBlankRows" style="width:16px;height:16px;accent-color:#6366f1;">
+            <div><div style="color:#1e2736;font-size:0.88rem;font-weight:600;">Remove Fully Blank Rows</div><div style="color:#64748b;font-size:0.78rem;margin-top:2px;">Removes rows where all cells are empty</div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px 14px;cursor:pointer;">
+            <input type="checkbox" id="prepTrim" checked style="width:16px;height:16px;accent-color:#6366f1;">
+            <div><div style="color:#1e2736;font-size:0.88rem;font-weight:600;">Trim Whitespace</div><div style="color:#64748b;font-size:0.78rem;margin-top:2px;">Strips leading/trailing spaces from all cells</div></div>
+          </label>
+        </div>
+        <div style="margin-top:16px;">
+          <div style="color:#475569;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;font-weight:700;">Handle Null / Empty Cells</div>
+          <div style="display:grid;gap:8px;">
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);cursor:pointer;background:rgba(255,255,255,0.03);">
+              <input type="radio" name="nullStrategy" value="keep" checked style="accent-color:#6366f1;"> <span style="color:#1e2736;font-size:0.86rem;">Keep as-is (store as NULL)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);cursor:pointer;background:rgba(255,255,255,0.03);">
+              <input type="radio" name="nullStrategy" value="remove_rows" style="accent-color:#6366f1;"> <span style="color:#1e2736;font-size:0.86rem;">Remove rows that have any empty cell</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);cursor:pointer;background:rgba(255,255,255,0.03);">
+              <input type="radio" name="nullStrategy" value="fill_empty" style="accent-color:#6366f1;">
+              <span style="color:#1e2736;font-size:0.86rem;">Fill empty cells with:</span>
+              <input type="text" id="fillValueInput" value="N/A" style="width:80px;background:#e2e8f0;border:1px solid rgba(255,255,255,0.1);color:#1e2736;border-radius:6px;padding:4px 8px;font-size:0.83rem;" onclick="document.querySelector('[name=nullStrategy][value=fill_empty]').checked=true">
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);cursor:pointer;background:rgba(255,255,255,0.03);">
+              <input type="radio" name="nullStrategy" value="fill_zero" style="accent-color:#6366f1;"> <span style="color:#1e2736;font-size:0.86rem;">Fill empty cells with 0 (numeric columns)</span>
+            </label>
+          </div>
+        </div>
+        <div id="prepPreviewSection" style="display:none;margin-top:20px;">
+          <div style="color:#475569;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:700;">Preview After Cleaning</div>
+          <div id="prepReportBox" style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:0.83rem;color:#a7f3d0;line-height:1.8;"></div>
+          <div class="preview-wrap"><table class="preview-table"><thead id="prepPreviewHead"></thead><tbody id="prepPreviewBody"></tbody></table></div>
+        </div>
+      </div>
+      <!-- Step 4: Import result -->
+      <div id="csvStep3" style="display:none;"></div>
+    </div>
+    <div class="csv-footer" id="csvFooter">
+      <div class="csv-footer-left" id="footerLeft"></div>
+      <div class="csv-footer-right" id="footerRight">
+        <button class="btn-cancel" onclick="closeCsvModal()">Cancel</button>
+        <button class="btn-next" id="nextBtn" onclick="csvNext()" disabled>Next <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  document.getElementById('themeLabel').textContent = isDark ? 'Light' : 'Dark';
+  document.getElementById('themeThumb').textContent = isDark ? '☀️' : '🌙';
+  try { localStorage.setItem('sql-assistant-theme', newTheme); } catch(e) {}
+}
+
+// Restore saved theme
+(function() {
+  try {
+    const saved = localStorage.getItem('sql-assistant-theme');
+    if (saved === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.getElementById('themeLabel').textContent = 'Light';
+      document.getElementById('themeThumb').textContent = '☀️';
+    }
+  } catch(e) {}
+})();
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let activeChatId   = {{ active_chat_id | tojson if active_chat_id else 'null' }};
+let chats          = {{ chats | tojson }};
+let pendingSqlId   = null;
+let pendingSqlCmds = null;
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  renderChatList();
+  if (activeChatId) showActiveChat(activeChatId);
+  loadDatabasesForModal();
+});
+
+// ═══════════════════════════════════════
+// CHAT LIST
+// ═══════════════════════════════════════
+function renderChatList() {
+  const list = document.getElementById('chatList');
+  if (!chats.length) {
+    list.innerHTML = `<div style="padding:16px 12px;color:var(--text-faintest);font-size:0.78rem;text-align:center;">No conversations yet.<br>Click <strong style="color:var(--text-faint)">+ New Chat</strong> to start.</div>`;
+    return;
+  }
+  const favs   = chats.filter(c => c.is_favorite);
+  const normal = chats.filter(c => !c.is_favorite);
+  let html = '';
+  if (favs.length) { html += `<div class="fav-section-label">⭐ Favorites</div>`; favs.forEach(c => { html += chatItemHtml(c); }); }
+  if (normal.length) { if (favs.length) html += `<div class="fav-section-label" style="margin-top:6px;">Recent</div>`; normal.forEach(c => { html += chatItemHtml(c); }); }
+  list.innerHTML = html;
+}
+
+function chatItemHtml(c) {
+  const active  = c.id === activeChatId ? ' active' : '';
+  const favIcon = c.is_favorite ? '⭐' : '☆';
+  const favCls  = c.is_favorite ? ' fav-active' : '';
+  const dbLabel = c.database_name ? `<div class="chat-item-db">🗄 ${escapeHtml(c.database_name)}</div>` : `<div class="chat-item-db" style="color:var(--text-faintest);">No database</div>`;
+  return `<div class="chat-item${active}" id="ci_${c.id}" onclick="selectChat('${c.id}')">
+    <div class="chat-item-icon">${c.is_favorite ? '⭐' : '💬'}</div>
+    <div class="chat-item-info">
+      <div class="chat-item-name" id="cin_${c.id}">${escapeHtml(c.name)}</div>
+      ${dbLabel}
+    </div>
+    <div class="chat-actions" onclick="event.stopPropagation()">
+      <button class="chat-action-btn${favCls}" title="Favorite" onclick="toggleFav('${c.id}')">${favIcon}</button>
+      <button class="chat-action-btn" title="Rename" onclick="startRename('${c.id}')">✎</button>
+      <button class="chat-action-btn del" title="Delete" onclick="deleteChat('${c.id}')">🗑</button>
+    </div>
+  </div>`;
+}
+
+async function selectChat(chatId) {
+  if (activeChatId === chatId) return;
+  activeChatId = chatId;
+  pendingSqlId = null; pendingSqlCmds = null;
+  setExecuteEnabled(false);
+  document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+  const ci = document.getElementById('ci_' + chatId);
+  if (ci) ci.classList.add('active');
+  const resp = await fetch(`/chat/${chatId}/select`, {method:'POST'});
+  const data = await resp.json();
+  showActiveChat(chatId, data.chat, data.history || []);
+}
+
+function showActiveChat(chatId, chat, history) {
+  if (!chat) chat = chats.find(c => c.id === chatId);
+  if (!chat) return;
+  document.getElementById('noChatPlaceholder').style.display = 'none';
+  const av = document.getElementById('activeChatView');
+  av.style.display = 'flex'; av.style.flexDirection = 'column'; av.style.overflow = 'hidden'; av.style.flex = '1';
+  document.getElementById('activeChatName').textContent = chat.name;
+  const dbBadge = document.getElementById('activeChatDbBadge');
+  dbBadge.innerHTML = chat.database_name
+    ? `<span class="db-tag">🗄 ${escapeHtml(chat.database_name)}</span>`
+    : `<span style="color:var(--text-faint);font-size:0.72rem;">No database selected</span>`;
+  const chatMessages = document.getElementById('chatMessages');
+  chatMessages.innerHTML = '';
+  if (!history || !history.length) { appendWelcome(); }
+  else {
+    history.forEach(msg => {
+      if (msg.role === 'user') appendUserMessage(msg.content);
+      else if (msg.role === 'assistant') appendAIMessage(msg.content, msg.pending_sql || [], msg.executed ? msg.results : null);
+    });
+  }
+  scrollBottom();
+}
+
+// ═══════════════════════════════════════
+// NEW CHAT MODAL
+// ═══════════════════════════════════════
+function openNewChatModal() {
+  document.getElementById('newChatName').value = '';
+  document.getElementById('newChatModal').classList.add('open');
+  setTimeout(() => document.getElementById('newChatName').focus(), 80);
+}
+function closeNewChatModal() { document.getElementById('newChatModal').classList.remove('open'); }
+document.getElementById('newChatModal').addEventListener('click', e => { if (e.target === document.getElementById('newChatModal')) closeNewChatModal(); });
+document.getElementById('newChatName').addEventListener('keydown', e => { if (e.key === 'Enter') createNewChat(); });
+
+async function loadDatabasesForModal() {
+  try {
+    const r = await fetch('/list_databases');
+    const d = await r.json();
+    const sel = document.getElementById('newChatDb');
+    if (d.status === 'success' && d.databases) {
+      const system = new Set(['information_schema','performance_schema','mysql','sys']);
+      d.databases.filter(db => !system.has(db)).forEach(db => {
+        const opt = document.createElement('option');
+        opt.value = db; opt.textContent = db; sel.appendChild(opt);
+      });
+    }
+  } catch(e) {}
+}
+
+async function createNewChat() {
+  const name = document.getElementById('newChatName').value.trim();
+  const db   = document.getElementById('newChatDb').value.trim();
+  if (!name) { document.getElementById('newChatName').focus(); return; }
+  const resp = await fetch('/chat/new', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, database_name: db || null}) });
+  const data = await resp.json();
+  if (data.error) { alert(data.error); return; }
+  chats.unshift(data);
+  activeChatId = data.id;
+  pendingSqlId = null; pendingSqlCmds = null;
+  setExecuteEnabled(false);
+  closeNewChatModal();
+  renderChatList();
+  showActiveChat(data.id, data, []);
+}
+
+// ═══════════════════════════════════════
+// RENAME / FAV / DELETE
+// ═══════════════════════════════════════
+function startRename(chatId) {
+  const nameEl = document.getElementById('cin_' + chatId);
+  if (!nameEl) return;
+  const current = chats.find(c => c.id === chatId)?.name || '';
+  nameEl.innerHTML = `<input class="rename-input" id="ri_${chatId}" value="${escapeHtml(current)}" onclick="event.stopPropagation()">`;
+  const inp = document.getElementById('ri_' + chatId);
+  inp.focus(); inp.select();
+  inp.addEventListener('blur', () => finishRename(chatId, inp.value));
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finishRename(chatId, inp.value); } if (e.key === 'Escape') renderChatList(); });
+}
+
+async function finishRename(chatId, newName) {
+  newName = newName.trim();
+  if (!newName) { renderChatList(); return; }
+  await fetch(`/chat/${chatId}/rename`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: newName}) });
+  const chat = chats.find(c => c.id === chatId);
+  if (chat) chat.name = newName;
+  renderChatList();
+  if (activeChatId === chatId) document.getElementById('activeChatName').textContent = newName;
+}
+
+async function toggleFav(chatId) {
+  const resp = await fetch(`/chat/${chatId}/favorite`, {method:'POST'});
+  const data = await resp.json();
+  const chat = chats.find(c => c.id === chatId);
+  if (chat) chat.is_favorite = data.is_favorite;
+  chats.sort((a,b) => (b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0));
+  renderChatList();
+}
+
+async function deleteChat(chatId) {
+  if (!confirm('Delete this conversation?')) return;
+  await fetch(`/chat/${chatId}/delete`, {method:'POST'});
+  chats = chats.filter(c => c.id !== chatId);
+  if (activeChatId === chatId) {
+    activeChatId = null; pendingSqlId = null; pendingSqlCmds = null;
+    setExecuteEnabled(false);
+    document.getElementById('activeChatView').style.display = 'none';
+    document.getElementById('noChatPlaceholder').style.display = 'flex';
+  }
+  renderChatList();
+}
+
+// ═══════════════════════════════════════
+// EXECUTE BUTTON STATE
+// ═══════════════════════════════════════
+function setExecuteEnabled(enabled) {
+  const btn = document.getElementById('executeInputBtn');
+  if (enabled) btn.classList.add('enabled'); else btn.classList.remove('enabled');
+}
+function triggerExecuteLatest() {
+  if (!pendingSqlId || !pendingSqlCmds) return;
+  executeSQL(pendingSqlId, encodeURIComponent(JSON.stringify(pendingSqlCmds)));
+}
+
+document.getElementById('userInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.altKey) { e.preventDefault(); if (pendingSqlId && pendingSqlCmds) triggerExecuteLatest(); return; }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+document.getElementById('userInput').addEventListener('input', () => {
+  const ta = document.getElementById('userInput');
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+});
+
+// ═══════════════════════════════════════
+// MESSAGING
+// ═══════════════════════════════════════
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+function formatMessage(text) {
+  text = text.replace(/```sql([\s\S]*?)```/gi, '<pre><code>$1</code></pre>');
+  text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/<SQL>[\s\S]*?<\/SQL>/gi, '');
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+function appendWelcome() {
+  const chatMessages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'welcome'; div.id = 'welcomeScreen';
+  div.innerHTML = `
+    <div class="welcome-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/>
+      </svg>
+    </div>
+    <h2>Ready to Query</h2>
+    <p>Ask me anything about your database in plain English. I'll generate the SQL and let you review it before executing.</p>
+    <div class="welcome-chips">
+      <div class="chip" onclick="fillPrompt('Show all tables in my database')">Show all tables</div>
+      <div class="chip" onclick="fillPrompt('Show all databases')">List databases</div>
+      <div class="chip" onclick="fillPrompt('Create a products table with id, name, price, quantity')">Create a table</div>
+      <div class="chip" onclick="fillPrompt('Select all rows from ')">Select records</div>
+      <div class="chip" onclick="fillPrompt('Describe the structure of my tables')">Describe tables</div>
+    </div>`;
+  chatMessages.appendChild(div);
+}
+
+function fillPrompt(text) { document.getElementById('userInput').value = text; document.getElementById('userInput').focus(); }
+function hideWelcome() { const w = document.getElementById('welcomeScreen'); if (w) w.remove(); }
+
+function appendUserMessage(text) {
+  hideWelcome();
+  const chatMessages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div>
+      <div class="bubble">${escapeHtml(text).replace(/\n/g,'<br>')}</div>
+      <div class="msg-time">${formatTime()}</div>
+    </div>
+    <div class="avatar user-av">👤</div>`;
+  chatMessages.appendChild(div);
+  scrollBottom();
+}
+
+function appendTyping() {
+  const chatMessages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant'; div.id = 'typingIndicator';
+  div.innerHTML = `<div class="avatar ai">🤖</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chatMessages.appendChild(div);
+  scrollBottom();
+}
+
+function appendAIMessage(text, sqlCommands, executedResults) {
+  const existing = document.getElementById('typingIndicator');
+  if (existing) existing.remove();
+  const chatMessages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  let sqlHtml = '';
+  if (sqlCommands && sqlCommands.length > 0) {
+    const sqlId      = 'sql_' + Date.now();
+    const sqlEncoded = encodeURIComponent(JSON.stringify(sqlCommands));
+    const sqlDisplay = sqlCommands.map(s => escapeHtml(s)).join('\n\n');
+    if (!executedResults) { pendingSqlId = sqlId; pendingSqlCmds = sqlCommands; setExecuteEnabled(true); }
+    let actionsHtml = executedResults
+      ? `<div class="sql-actions"><button class="execute-btn done" disabled>✅ Executed</button></div>`
+      : `<div class="sql-actions">
+          <button class="execute-btn" id="perfbtn_${sqlId}" onclick="executeSQL('${sqlId}', '${sqlEncoded}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>
+            Execute
+          </button>
+          <span style="color:var(--text-faint);font-size:0.76rem;padding-left:4px;align-self:center;">Alt+Enter to run</span>
+        </div>`;
+    let resultsHtml = '';
+    if (executedResults) {
+      let rh = '';
+      for (const r of executedResults) {
+        const res = r.result;
+        if (res.type === 'ERROR') rh += `<div class="result-error">❌ ${escapeHtml(res.error)}</div>`;
+        else if (res.type === 'SELECT') rh += buildTable(res);
+        else rh += `<div class="result-success">✅ ${res.type} — ${res.rows_affected ?? 0} row(s) affected</div>`;
+      }
+      resultsHtml = `<div class="result-block">${rh}</div>`;
+    }
+    sqlHtml = `
+      <div class="sql-preview" id="preview_${sqlId}">
+        <div class="sql-preview-header">
+          <span>📋 SQL Preview</span>
+          <span style="color:var(--text-faint);font-size:0.69rem;">${sqlCommands.length} statement${sqlCommands.length > 1 ? 's' : ''}</span>
+        </div>
+        <div class="sql-code">${sqlDisplay}</div>
+        ${actionsHtml}
+        <div class="result-block" id="result_${sqlId}">${resultsHtml}</div>
+      </div>`;
+  }
+  div.innerHTML = `
+    <div class="avatar ai">🤖</div>
+    <div style="flex:1;min-width:0;">
+      <div class="bubble">
+        <div>${formatMessage(text)}</div>
+        ${sqlHtml}
+      </div>
+      <div class="msg-time">${formatTime()}</div>
+    </div>`;
+  chatMessages.appendChild(div);
+  scrollBottom();
+}
+
+async function sendMessage() {
+  if (!activeChatId) { openNewChatModal(); return; }
+  const userInput = document.getElementById('userInput');
+  const text = userInput.value.trim();
+  if (!text) return;
+  userInput.value = ''; userInput.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+  pendingSqlId = null; pendingSqlCmds = null; setExecuteEnabled(false);
+  appendUserMessage(text);
+  appendTyping();
+  try {
+    const resp = await fetch('/process', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, chat_id: activeChatId}) });
+    const data = await resp.json();
+    if (data.error) { document.getElementById('typingIndicator')?.remove(); appendAIMessage('⚠️ ' + data.error, [], null); }
+    else appendAIMessage(data.response, data.sql_commands || [], null);
+  } catch (err) {
+    document.getElementById('typingIndicator')?.remove();
+    appendAIMessage('⚠️ Network error: ' + err.message, [], null);
+  }
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('userInput').focus();
+}
+
+async function executeSQL(sqlId, encodedCommands) {
+  const btn       = document.getElementById('perfbtn_' + sqlId);
+  const resultDiv = document.getElementById('result_' + sqlId);
+  if (!btn || !resultDiv) return;
+  const sqlCommands = JSON.parse(decodeURIComponent(encodedCommands));
+  btn.disabled = true;
+  btn.innerHTML = `<div class="typing" style="padding:0;gap:4px;"><span></span><span></span><span></span></div> Running...`;
+  setExecuteEnabled(false);
+  try {
+    const resp = await fetch('/execute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sql_commands: sqlCommands, chat_id: activeChatId}) });
+    const data = await resp.json();
+    if (data.error) {
+      resultDiv.innerHTML = `<div class="result-error">❌ ${escapeHtml(data.error)}</div>`;
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg> Retry`;
+      setExecuteEnabled(true);
+    } else {
+      let html = '';
+      for (const r of data.results) {
+        const res = r.result;
+        if (res.type === 'ERROR') html += `<div class="result-error">❌ ${escapeHtml(res.error)}</div>`;
+        else if (res.type === 'SELECT') html += buildTable(res);
+        else html += `<div class="result-success">✅ ${res.type} successful — ${res.rows_affected ?? 0} row(s) affected</div>`;
+      }
+      resultDiv.innerHTML = html;
+      btn.classList.add('done'); btn.innerHTML = '✅ Executed'; btn.disabled = true;
+      if (pendingSqlId === sqlId) { pendingSqlId = null; pendingSqlCmds = null; }
+    }
+  } catch (err) {
+    resultDiv.innerHTML = `<div class="result-error">❌ Network error: ${escapeHtml(err.message)}</div>`;
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg> Retry`;
+    setExecuteEnabled(true);
+  }
+  scrollBottom();
+}
+
+// ── Chart registry to destroy before re-render ───────────────────────────────
+const _chartInstances = {};
+
+function buildTable(res) {
+  if (!res.rows || !res.rows.length) return `<div class="result-success">✅ Query returned 0 rows</div>`;
+  const headers = res.columns.map(c => `<th>${escapeHtml(String(c))}</th>`).join('');
+  const rows = res.rows.map(row => `<tr>${row.map(cell => `<td>${cell === null ? '<em style="color:var(--text-faint)">NULL</em>' : escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('');
+
+  // detect numeric columns for chart
+  const numericCols = res.columns.filter((c,i) => res.rows.some(r => r[i] !== null && !isNaN(Number(r[i]))));
+  const chartId = 'chart_' + Math.random().toString(36).slice(2,8);
+
+  let chartHtml = '';
+  if (numericCols.length > 0 && res.rows.length > 0) {
+    const labelColOpts = res.columns.map((c,i) => `<option value="${i}">${escapeHtml(c)}</option>`).join('');
+    const valueColOpts = res.columns.map((c,i) => `<option value="${i}" ${res.columns[i]===numericCols[0]?'selected':''}>${escapeHtml(c)}</option>`).join('');
+    chartHtml = `
+    <div class="chart-toolbar">
+      <button class="chart-btn" id="toggleBtn_${chartId}" onclick="toggleChart('${chartId}')">📊 Visualize</button>
+      <span style="color:var(--text-faint);font-size:0.75rem;" id="chartOpts_${chartId}" style="display:none">
+        Type: <select id="chartType_${chartId}" onchange="renderChart('${chartId}')">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+          <option value="doughnut">Doughnut</option>
+        </select>
+        &nbsp;Label: <select id="labelCol_${chartId}" onchange="renderChart('${chartId}')">${labelColOpts}</select>
+        &nbsp;Value: <select id="valueCol_${chartId}" onchange="renderChart('${chartId}')">${valueColOpts}</select>
+      </span>
+    </div>
+    <div class="chart-panel" id="chartPanel_${chartId}">
+      <div class="chart-canvas-wrap"><canvas id="canvas_${chartId}"></canvas></div>
+    </div>`;
+  }
+
+  // stash result data on window for chart rendering
+  window['_tableData_' + chartId] = res;
+
+  return `<div class="result-table-wrap"><table class="result-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></div>
+<div class="result-count">${res.count} row${res.count !== 1 ? 's' : ''} returned</div>${chartHtml}`;
+}
+
+function toggleChart(chartId) {
+  const panel = document.getElementById('chartPanel_' + chartId);
+  const btn   = document.getElementById('toggleBtn_' + chartId);
+  const opts  = document.getElementById('chartOpts_' + chartId);
+  const visible = panel.classList.toggle('visible');
+  btn.classList.toggle('active', visible);
+  opts.style.display = visible ? '' : 'none';
+  if (visible) renderChart(chartId);
+}
+
+function renderChart(chartId) {
+  const res       = window['_tableData_' + chartId];
+  const chartType = document.getElementById('chartType_' + chartId)?.value || 'bar';
+  const labelIdx  = parseInt(document.getElementById('labelCol_' + chartId)?.value ?? 0);
+  const valueIdx  = parseInt(document.getElementById('valueCol_' + chartId)?.value ?? 1);
+
+  const labels = res.rows.map(r => r[labelIdx] !== null ? String(r[labelIdx]) : 'NULL');
+  const values = res.rows.map(r => r[valueIdx] !== null ? Number(r[valueIdx]) : 0);
+
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const textColor = isDark ? '#94a3b8' : '#475569';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+  const palette   = ['#818cf8','#34d399','#60a5fa','#f472b6','#fbbf24','#a78bfa','#fb923c','#4ade80'];
+
+  if (_chartInstances[chartId]) {
+    _chartInstances[chartId].destroy();
+    delete _chartInstances[chartId];
+  }
+  const ctx = document.getElementById('canvas_' + chartId)?.getContext('2d');
+  if (!ctx) return;
+
+  const isPie = chartType === 'pie' || chartType === 'doughnut';
+  _chartInstances[chartId] = new Chart(ctx, {
+    type: chartType,
+    data: {
+      labels,
+      datasets: [{
+        label: res.columns[valueIdx],
+        data: values,
+        backgroundColor: isPie ? palette.slice(0, labels.length) : 'rgba(129,140,248,0.7)',
+        borderColor: isPie ? palette.slice(0, labels.length) : '#818cf8',
+        borderWidth: 1,
+        borderRadius: chartType === 'bar' ? 4 : 0,
+        tension: 0.35,
+        fill: chartType === 'line' ? false : undefined,
+        pointBackgroundColor: '#818cf8',
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color: textColor, font: { family: 'Sora', size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y ?? ctx.parsed}: ${res.columns[valueIdx]}` } }
+      },
+      scales: isPie ? {} : {
+        x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } },
+        y: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } }
+      }
+    }
+  });
+}
+
+async function clearCurrentHistory() {
+  if (!activeChatId) return;
+  await fetch('/clear_history', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({chat_id: activeChatId})});
+  document.getElementById('chatMessages').innerHTML = '';
+  pendingSqlId = null; pendingSqlCmds = null; setExecuteEnabled(false);
+  appendWelcome();
+}
+
+function scrollBottom() { const cm = document.getElementById('chatMessages'); cm.scrollTop = cm.scrollHeight; }
+
+// ═══════════════════════════════════════
+// CSV IMPORT
+// ═══════════════════════════════════════
+// ─── CSV Import (4-step: Upload → Configure → Clean Data → Import) ───────────
+let csvState = { step: 1, parsedData: null, cleanedData: null };
+
+function openCsvModal() {
+  csvState = { step: 1, parsedData: null, cleanedData: null };
+  renderStep(1);
+  document.getElementById('csvModal').classList.add('open');
+}
+function closeCsvModal() { document.getElementById('csvModal').classList.remove('open'); }
+document.getElementById('csvModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('csvModal')) closeCsvModal();
+});
+
+// Step indices: 1=Upload, 2=Configure, 3=Clean Data, 4=Import result
+function renderStep(n) {
+  csvState.step = n;
+  // Map display step numbers to indicator ids: step 3 (clean) → step3Ind, step 4 (result) → step4Ind
+  const totalSteps = 4;
+  for (let i = 1; i <= totalSteps; i++) {
+    const el = document.getElementById(`step${i}Ind`);
+    if (!el) continue;
+    el.className = 'step-item' + (i < n ? ' done' : i === n ? ' active' : '');
+    el.querySelector('.step-num').textContent = i < n ? '✓' : i;
+  }
+  document.getElementById('csvStep1').style.display  = n === 1 ? '' : 'none';
+  document.getElementById('csvStep2').style.display  = n === 2 ? '' : 'none';
+  document.getElementById('csvStep2b').style.display = n === 3 ? '' : 'none';
+  document.getElementById('csvStep3').style.display  = n === 4 ? '' : 'none';
+
+  const fl = document.getElementById('footerLeft');
+  const fr = document.getElementById('footerRight');
+  const rowCount = csvState.cleanedData?.total_rows ?? csvState.parsedData?.total_rows ?? 0;
+
+  if (n === 1) {
+    fl.textContent = 'Select a CSV file to begin';
+    fr.innerHTML = `<button class="btn-cancel" onclick="closeCsvModal()">Cancel</button>
+      <button class="btn-next" id="nextBtn" onclick="csvNext()" disabled>Next
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>`;
+  } else if (n === 2) {
+    fl.innerHTML = `<span style="color:#34d399">${csvState.parsedData?.total_rows||0} rows</span> · configure columns`;
+    fr.innerHTML = `<button class="btn-back" onclick="renderStep(1)">← Back</button>
+      <button class="btn-next" onclick="goToCleanStep()">Next: Clean Data
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>`;
+  } else if (n === 3) {
+    fl.innerHTML = `<span style="color:#657ce9">${rowCount} rows</span> · choose cleaning options`;
+    fr.innerHTML = `<button class="btn-back" onclick="renderStep(2)">← Back</button>
+      <button class="btn-next" id="applyCleanBtn" onclick="applyPreprocessing()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 7H4M16 12H4M12 17H4"/></svg>
+        Apply &amp; Preview
+      </button>
+      <button class="btn-import" id="proceedImportBtn" onclick="doImport()" style="opacity:0.5;pointer-events:none;" title="Apply &amp; Preview first to enable import">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Import to Database
+      </button>`;
+  } else {
+    fl.textContent = '';
+    fr.innerHTML = `<button class="btn-cancel" onclick="closeCsvModal()">Close</button>`;
+  }
+}
+
+// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) processFile(f); });
+function handleFileSelect(input) { if (input.files[0]) processFile(input.files[0]); }
+
+async function processFile(file) {
+  const status = document.getElementById('uploadStatus');
+  if (!file.name.toLowerCase().endsWith('.csv')) { status.innerHTML = '<div style="color:#f87171;font-size:0.84rem;">⚠️ Please select a .csv file</div>'; return; }
+  status.innerHTML = `<div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:0.84rem;"><div class="spinner"></div> Parsing ${escapeHtml(file.name)}...</div>`;
+  const formData = new FormData(); formData.append('file', file);
+  try {
+    const r = await fetch('/csv_preview', {method:'POST',body:formData});
+    const d = await r.json();
+    if (d.error) { status.innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.28);color:#f87171;border-radius:9px;padding:10px 13px;font-size:0.83rem;">❌ ${escapeHtml(d.error)}</div>`; return; }
+    csvState.parsedData = d;
+    status.innerHTML = `<div style="color:#34d399;font-size:0.83rem;">✅ ${escapeHtml(file.name)} — ${d.total_rows} rows, ${d.columns.length} columns detected</div>`;
+    document.getElementById('nextBtn').disabled = false;
+  } catch(e) { status.innerHTML = `<div style="color:#f87171;font-size:0.84rem;">❌ Network error: ${e.message}</div>`; }
+}
+
+function csvNext() { if (csvState.step === 1 && csvState.parsedData) { buildStep2(); renderStep(2); } }
+
+// ─── Step 2: Configure columns ───────────────────────────────────────────────
+function buildStep2() {
+  const d = csvState.parsedData;
+  document.getElementById('csvInfoBar').innerHTML = `<span>📄 <strong>${d.total_rows}</strong> rows</span><span>·</span><span>🗂 <strong>${d.columns.length}</strong> columns</span><span>·</span><span>Types auto-detected</span>${d.columns.map((c,i)=>`<span class="tag">${escapeHtml(c)}: ${escapeHtml(d.col_types[i])}</span>`).join('')}`;
+  document.getElementById('tableNameInput').value = d.suggested_table;
+  const types = ['INT','BIGINT','DOUBLE','FLOAT','VARCHAR(100)','VARCHAR(255)','TEXT','DATE','DATETIME','BOOLEAN'];
+  document.getElementById('colTableBody').innerHTML = d.columns.map((col,i) => {
+    const sample = d.preview_rows[0] ? (d.preview_rows[0][i] || '') : '';
+    const typeOpts = types.map(t => `<option value="${t}" ${d.col_types[i]===t?'selected':''}>${t}</option>`).join('');
+    return `<tr><td style="color:var(--text-faint);font-size:0.72rem;">${i+1}</td><td><input class="col-name-input" id="colName_${i}" value="${escapeHtml(col)}"></td><td><select class="type-select" id="colType_${i}">${typeOpts}</select></td><td class="orig-col">${escapeHtml(d.original_headers[i])}</td><td class="sample-val" title="${escapeHtml(sample)}">${escapeHtml(sample)||'<span class="null-val">empty</span>'}</td></tr>`;
+  }).join('');
+  document.getElementById('previewHead').innerHTML = '<tr>' + d.columns.map(c=>`<th>${escapeHtml(c)}</th>`).join('') + '</tr>';
+  document.getElementById('previewBody').innerHTML = d.preview_rows.map(row => '<tr>' + row.map(cell => cell===''||cell===null ? '<td class="null-val">—</td>' : `<td>${escapeHtml(String(cell))}</td>`).join('') + '</tr>').join('');
+}
+
+function goToCleanStep() {
+  const d = csvState.parsedData;
+  // Show data quality stats in the preprocessing panel
+  const nullTotal = (d.null_counts||[]).reduce((a,b)=>a+b,0);
+  document.getElementById('prepStatsBar').innerHTML =
+    `<span style="color:#2e4fea;font-weight:600;font-size:0.88rem;">📊 Data Quality</span>
+     <span style="color:#657ce9;font-size:0.84rem;">Total rows: <strong>${d.total_rows}</strong></span>
+     <span style="color:#fbbf24;font-size:0.84rem;">Duplicates: <strong>${d.duplicate_count||0}</strong></span>
+     <span style="color:#f87171;font-size:0.84rem;">Empty cells: <strong>${nullTotal}</strong></span>
+     ${(d.null_counts||[]).map((n,i) => n > 0
+       ? `<span class="tag" style="background:rgba(248,113,113,0.1);color:#fca5a5;">${escapeHtml(d.columns[i])}: ${n} empty</span>`
+       : '').join('')}`;
+  // Pre-check duplicates/blanks if issues found
+  document.getElementById('prepDuplicates').checked = (d.duplicate_count||0) > 0;
+  document.getElementById('prepBlankRows').checked  = false;
+  document.getElementById('prepTrim').checked       = true;
+  document.getElementById('prepPreviewSection').style.display = 'none';
+  renderStep(3);
+}
+
+// ─── Step 3: Preprocessing ───────────────────────────────────────────────────
+async function applyPreprocessing() {
+  const d = csvState.parsedData;
+  const btn = document.getElementById('applyCleanBtn');
+  btn.disabled = true;
+  btn.textContent = 'Applying...';
+
+  const nullStrategy = document.querySelector('[name=nullStrategy]:checked')?.value || 'keep';
+  const operations = {
+    remove_duplicates: document.getElementById('prepDuplicates').checked,
+    remove_blank_rows: document.getElementById('prepBlankRows').checked,
+    trim_whitespace:   document.getElementById('prepTrim').checked,
+    null_strategy:     nullStrategy,
+    fill_value:        document.getElementById('fillValueInput').value || 'N/A',
+  };
+
+  try {
+    const r = await fetch('/csv_preprocess', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ all_rows: d.all_rows, columns: d.columns, operations })
+    });
+    const result = await r.json();
+    if (result.error) {
+      alert('Preprocessing error: ' + result.error);
+      btn.disabled = false; btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 7H4M16 12H4M12 17H4"/></svg> Apply & Preview`;
+      return;
+    }
+    // Save cleaned data back into state so doImport uses it
+    csvState.cleanedData = result;
+
+    const section = document.getElementById('prepPreviewSection');
+    section.style.display = '';
+    document.getElementById('prepReportBox').innerHTML =
+      `<strong>✅ Cleaning complete</strong> — ${result.original_count} → <strong>${result.total_rows} rows</strong>` +
+      (result.removed_count > 0 ? ` (<span style="color:#f87171">${result.removed_count} removed</span>)` : '') +
+      '<br>' + result.report.map(r => `• ${escapeHtml(r)}`).join('<br>');
+
+    document.getElementById('prepPreviewHead').innerHTML =
+      '<tr>' + d.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr>';
+    document.getElementById('prepPreviewBody').innerHTML = result.preview_rows.map(row =>
+      '<tr>' + row.map(cell => cell===''||cell===null
+        ? '<td class="null-val">—</td>'
+        : `<td>${escapeHtml(String(cell))}</td>`).join('') + '</tr>'
+    ).join('');
+
+    // Update footer row count
+    document.getElementById('footerLeft').innerHTML =
+      `<span style="color:#34d399">${result.total_rows} rows</span> after cleaning (${result.removed_count} removed)`;
+
+    // ✅ Enable Import button now that preview is applied
+    const importBtn = document.getElementById('proceedImportBtn');
+    if (importBtn) {
+      importBtn.style.opacity = '1';
+      importBtn.style.pointerEvents = 'auto';
+      importBtn.title = '';
+    }
+  } catch(e) {
+    alert('Network error: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 7H4M16 12H4M12 17H4"/></svg> Apply & Preview`;
+}
+
+// ─── Step 4: Import ──────────────────────────────────────────────────────────
+async function doImport() {
+  const d = csvState.parsedData;
+  const tableName = document.getElementById('tableNameInput').value.trim();
+  const ifExists  = document.getElementById('ifExistsSelect').value;
+  const addId     = document.getElementById('addIdToggle').checked;
+  const columns   = d.columns.map((_,i) => document.getElementById(`colName_${i}`).value.trim());
+  const colTypes  = d.columns.map((_,i) => document.getElementById(`colType_${i}`).value);
+  const chat      = activeChatId ? chats.find(c => c.id === activeChatId) : null;
+  const database  = chat?.database_name || null;
+
+  // ✅ Use cleaned rows if preprocessing was applied, otherwise use original
+  const rowsToImport = csvState.cleanedData ? csvState.cleanedData.all_rows : d.all_rows;
+  const totalRows    = csvState.cleanedData ? csvState.cleanedData.total_rows : d.total_rows;
+
+  if (!tableName) { alert('Please enter a table name.'); return; }
+  renderStep(4);
+  document.getElementById('csvStep3').innerHTML = `<div style="text-align:center;padding:40px 16px;"><div class="spinner" style="margin:0 auto 16px;width:36px;height:36px;border-width:3px;"></div><div style="color:var(--text-muted);font-size:0.88rem;">Importing ${totalRows} rows into <strong style="color:var(--text-primary)">${escapeHtml(tableName)}</strong>...</div></div>`;
+  document.getElementById('footerRight').innerHTML = '';
+  try {
+    const r = await fetch('/csv_import', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({table_name: tableName, columns, col_types: colTypes,
+        all_rows: rowsToImport, if_exists: ifExists, add_id: addId, database})
+    });
+    const result = await r.json();
+    if (result.error) {
+      document.getElementById('csvStep3').innerHTML = `<div class="import-error-box" style="margin:16px 0;">❌ ${escapeHtml(result.error)}</div>`;
+      document.getElementById('footerRight').innerHTML = `<button class="btn-back" onclick="renderStep(3);">← Back</button><button class="btn-cancel" onclick="closeCsvModal()">Close</button>`;
+    } else {
+      document.getElementById('csvStep3').innerHTML = `<div class="import-success"><div class="big-check">✅</div><h3>${escapeHtml(result.message)}</h3><p>You can now query this table. Try: <em style="color:#818cf8">"Select all rows from ${escapeHtml(result.table)}"</em></p><button class="btn-next" onclick="closeCsvModal();fillPrompt('Show all rows from ${escapeHtml(result.table)}')">Open in Chat →</button></div>`;
+      document.getElementById('footerRight').innerHTML = `<button class="btn-cancel" onclick="closeCsvModal()">Close</button>`;
+      if (activeChatId) appendAIMessage(`📥 CSV imported! Table \`${result.table}\` created with **${result.inserted} rows**.\n\nTry: "Show all rows from ${result.table}"`, [], null);
+    }
+  } catch(e) {
+    document.getElementById('csvStep3').innerHTML = `<div class="import-error-box">❌ Network error: ${escapeHtml(e.message)}</div>`;
+    document.getElementById('footerRight').innerHTML = `<button class="btn-back" onclick="renderStep(3);">← Back</button><button class="btn-cancel" onclick="closeCsvModal()">Close</button>`;
+  }
+}
+</script>
+</body>
+</html>

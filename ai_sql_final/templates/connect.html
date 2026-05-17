@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect MySQL — SQL Query Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh; background: #080c14;
+  background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99,102,241,0.15), transparent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif; padding: 32px 16px 48px; color: #e2e8f0;
+}
+.page { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 24px; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(99,102,241,0.35); }
+.brand-name { font-size: 1.5rem; font-weight: 600; color: #f0f6fc; letter-spacing: -0.01em;}
+.brand-name span { color: #818cf8; }
+.user-badge { background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.2); color: #a5b4fc; padding: 5px 14px; border-radius: 20px; font-size: 0.75rem; }
+.logout-link { color: #475569; font-size: 0.75rem; text-decoration: none; padding: 5px 10px; transition: color 0.2s; }
+.logout-link:hover { color: #94a3b8; }
+.grid { display: grid; grid-template-columns: 460px 1fr; gap: 22px; }
+@media (max-width: 740px) { .grid { grid-template-columns: 1fr; } }
+.card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 28px; width: 100%; max-width: 440px; align-self: center;}
+.card-title { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.02em; background: linear-gradient(135deg, #a5b4fc, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px; }
+.card-sub { color: #475569; font-size: 0.8rem; margin-bottom: 24px; }
+label { display: block; color: #64748b; font-size: 0.75rem; font-weight: 500; margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+.field { margin-bottom: 16px; }
+input[type="text"], input[type="password"] {
+  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px;
+  padding: 11px 14px; color: #e2e8f0; font-size: 0.9rem; font-family: 'Sora', sans-serif;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+input::placeholder { color: #1e293b; }
+.hint { color: #334155; font-size: 0.72rem; margin-top: 5px; }
+.test-btn {
+  width: 100%; padding: 10px 14px; margin-bottom: 12px;
+  background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.2);
+  color: #818cf8; border-radius: 10px; font-size: 0.84rem; font-family: 'Sora', sans-serif;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.test-btn:hover { background: rgba(99,102,241,0.14); border-color: rgba(99,102,241,0.4); }
+.test-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.connect-btn {
+  width: 100%; padding: 13px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 0.94rem; font-weight: 600; font-family: 'Sora', sans-serif; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity 0.2s, transform 0.1s; box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+}
+.connect-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.error-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; border-radius: 10px; padding: 11px 14px; font-size: 0.83rem; margin-bottom: 14px; white-space: pre-wrap; line-height: 1.7; }
+.ok-box { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.25); color: #86efac; border-radius: 10px; padding: 11px 14px; font-size: 0.83rem; margin-bottom: 14px; line-height: 1.6; }
+#testResult { display: none; }
+.help-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; display: flex; align-items: center; gap: 7px; margin-bottom: 12px; }
+.step { display: flex; gap: 10px; margin-bottom: 9px; }
+.sn { width: 20px; height: 20px; border-radius: 50%; font-size: 0.67rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step p { color: #4b5563; font-size: 0.78rem; line-height: 1.6; }
+.step code { background: rgba(129,140,248,0.1); color: #a5b4fc; padding: 1px 5px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; }
+.hl { color: #94a3b8; font-weight: 600; }
+.divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 16px 0; }
+.info-note { background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.15); border-radius: 10px; padding: 11px 14px; }
+.info-note p { color: #4b5563; font-size: 0.77rem; line-height: 1.8; }
+.info-note span { color: #a5b4fc; font-weight: 600; }
+.fix-card { background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.15); border-radius: 14px; padding: 18px; margin-top: 18px; }
+.fix-title { color: #f87171; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+.fix-card > p { color: #4b5563; font-size: 0.78rem; line-height: 1.6; margin-bottom: 10px; }
+.step-lbl { color: #64748b; font-size: 0.74rem; font-weight: 500; margin: 10px 0 5px; }
+.code-block { background: #0a0e17; border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: #e2e8f0; white-space: pre; overflow-x: auto; margin-bottom: 8px; position: relative; }
+.copy-btn { position: absolute; top: 6px; right: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 0.67rem; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s; }
+.copy-btn:hover { color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top-bar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/>
+        </svg>
+      </div>
+      <span class="brand-name"> <span>SQL</span> Query Assistant</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="user-badge">👤 Logged in</span>
+      <a href="/logout" class="logout-link">Sign out</a>
+    </div>
+  </div>
+
+  
+    <div class="card">
+      <div class="card-title">Connect to MySQL</div>
+      <div class="card-sub">Enter your MySQL server credentials — database selection happens per chat</div>
+      {% if error %}<div class="error-box">❌ {{ error }}</div>{% endif %}
+      <div id="testResult"></div>
+      <form method="POST" id="mainForm">
+        <div class="field">
+          <label>Host</label>
+          <input type="text" id="f_host" name="host" value="localhost" placeholder="localhost or 127.0.0.1">
+          <div class="hint">Use <strong style="color:#4b5563">localhost</strong> if MySQL is on this machine</div>
+        </div>
+        <div class="field">
+          <label>MySQL Username</label>
+          <input type="text" id="f_user" name="db_user" placeholder="root" autocomplete="username">
+          <div class="hint">Default is usually <strong style="color:#4b5563">root</strong></div>
+        </div>
+        <div class="field">
+          <label>MySQL Password</label>
+          <input type="password" id="f_pass" name="db_password" placeholder="Your MySQL password" autocomplete="current-password">
+          <div class="hint">Leave blank if no password was set during installation</div>
+        </div>
+        <button type="button" class="test-btn" id="testBtn" onclick="testConn()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Test Connection
+        </button>
+        <button type="submit" class="connect-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Connect &amp; Open Chat
+        </button>
+      </form>
+    </div>
+  
+</div>
+<script>
+async function testConn() {
+  const btn = document.getElementById('testBtn');
+  const box = document.getElementById('testResult');
+  const host = document.getElementById('f_host').value.trim() || 'localhost';
+  const user = document.getElementById('f_user').value.trim();
+  const pass = document.getElementById('f_pass').value;
+  if (!user) { box.style.display='block'; box.innerHTML='<div class="error-box">⚠️ Please enter a username first.</div>'; return; }
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .8s linear infinite"><path d="M21 12a9 9 0 11-6.22-8.56"/></svg> Testing...';
+  try {
+    const r = await fetch('/test_connection', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({host, user, password: pass}) });
+    const d = await r.json();
+    box.style.display = 'block';
+    if (d.ok) {
+      const dbs = d.databases && d.databases.length ? `<br><span style="color:#6ee7b7">Databases:</span> <strong>${d.databases.join(', ')}</strong>` : '';
+      box.innerHTML = `<div class="ok-box">✅ Connected! MySQL <strong>${d.version}</strong>${dbs}<br><span style="color:#4ade80;font-weight:600;">Now click "Connect & Open Chat" ↓</span></div>`;
+    } else {
+      box.innerHTML = `<div class="error-box">❌ ${(d.message||'').replace(/</g,'&lt;')}</div>`;
+    }
+  } catch(e) { box.style.display='block'; box.innerHTML=`<div class="error-box">❌ Network error: ${e.message}</div>`; }
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Test Connection';
+}
+function cp(btn) {
+  const text = btn.parentElement.innerText.replace('copy','').replace('copied!','').trim();
+  navigator.clipboard.writeText(text).then(() => { btn.textContent='copied!'; setTimeout(()=>btn.textContent='copy',1800); });
+}
+const s = document.createElement('style'); s.textContent='@keyframes spin{to{transform:rotate(360deg)}}'; document.head.appendChild(s);
+</script>
+</body>
+</html>

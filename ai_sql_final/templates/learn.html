@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Learning Lab — AI SQL Assistant</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0c29;
+  --surface: rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.1);
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent: #7c3aed;
+  --accent2: #4f46e5;
+  --green: #34d399;
+  --yellow: #f59e0b;
+  --red: #f87171;
+  --blue: #60a5fa;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #0f0c29 0%, #1a1740 50%, #0f0c29 100%);
+  min-height: 100vh; color: var(--text); overflow-x: hidden;
+}
+
+/* HEADER */
+header {
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px);
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo-mark {
+  width: 36px; height: 36px; background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.header-title { font-size: 1.1rem; font-weight: 700; color: #fff; }
+.header-sub { font-size: 0.78rem; color: var(--text-muted); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.user-chip {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 20px;
+  padding: 5px 12px; font-size: 0.82rem; color: var(--text-muted);
+}
+.btn-back-home {
+  background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+  border: 1px solid rgba(99,102,241,0.4); color: #a78bfa;
+  border-radius: 8px; padding: 7px 14px; font-size: 0.83rem; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: opacity 0.2s;
+}
+.btn-back-home:hover { opacity: 0.8; }
+
+/* MAIN LAYOUT */
+.app-layout { display: flex; height: calc(100vh - 61px); overflow: hidden; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 270px; min-width: 270px;
+  background: rgba(255,255,255,0.02);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; padding: 16px 12px;
+}
+.sidebar-label {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--text-muted); padding: 0 6px; margin-bottom: 10px;
+}
+.topic-btn {
+  width: 100%; text-align: left; background: transparent; border: none;
+  border-radius: 10px; padding: 10px 14px; cursor: pointer;
+  color: var(--text-muted); font-size: 0.87rem; transition: all 0.15s;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 3px;
+}
+.topic-btn:hover { background: var(--surface2); color: var(--text); }
+.topic-btn.active { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+  color: #c4b5fd; border: 1px solid rgba(99,102,241,0.35); }
+.topic-btn .topic-icon { font-size: 1rem; flex-shrink: 0; }
+.topic-btn .topic-info { flex: 1; }
+.topic-btn .topic-name { font-weight: 600; font-size: 0.85rem; }
+.topic-btn .topic-desc { font-size: 0.73rem; color: var(--text-muted); margin-top: 1px; }
+.topic-btn.active .topic-desc { color: rgba(196,181,253,0.7); }
+.progress-pill {
+  font-size: 0.7rem; padding: 2px 7px; border-radius: 10px;
+  background: rgba(52,211,153,0.15); color: #34d399; font-weight: 600;
+  flex-shrink: 0;
+}
+.progress-pill.done { background: rgba(52,211,153,0.25); }
+.sidebar-section { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+/* MAIN CONTENT */
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* TAB BAR */
+.tab-bar {
+  display: flex; gap: 4px; padding: 12px 20px 0;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+.tab-btn {
+  padding: 8px 18px; border: none; background: transparent;
+  color: var(--text-muted); font-size: 0.87rem; font-weight: 500;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.15s; border-radius: 6px 6px 0 0;
+}
+.tab-btn:hover { color: var(--text); background: var(--surface); }
+.tab-btn.active { color: #a78bfa; border-bottom-color: #7c3aed; background: rgba(124,58,237,0.08); }
+
+/* PANELS */
+.panel { display: none; flex: 1; overflow-y: auto; padding: 24px; }
+.panel.active { display: flex; flex-direction: column; gap: 20px; }
+
+/* LESSON PANEL */
+.lesson-hero {
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
+  border: 1px solid rgba(99,102,241,0.25); border-radius: 14px; padding: 24px 28px;
+}
+.lesson-hero h2 { font-size: 1.4rem; color: #fff; margin-bottom: 6px; }
+.lesson-hero p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
+.lesson-body { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; }
+.lesson-body h3 { font-size: 1rem; color: #c4b5fd; margin-bottom: 10px; margin-top: 18px; }
+.lesson-body h3:first-child { margin-top: 0; }
+.lesson-body p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.7; margin-bottom: 10px; }
+.sql-example {
+  background: rgba(0,0,0,0.35); border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 10px; padding: 14px 18px; font-family: 'Consolas', monospace;
+  font-size: 0.85rem; color: #93c5fd; margin: 10px 0; overflow-x: auto;
+  white-space: pre; line-height: 1.6;
+}
+.kw { color: #c084fc; font-weight: 700; }
+.str-val { color: #86efac; }
+.num-val { color: #fbbf24; }
+.comment { color: #64748b; font-style: italic; }
+
+/* AI TUTOR */
+.tutor-container { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.tutor-messages {
+  flex: 1; overflow-y: auto; padding: 16px 0;
+  display: flex; flex-direction: column; gap: 14px; min-height: 200px;
+}
+.tutor-msg { display: flex; gap: 12px; animation: fadeUp 0.2s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.tutor-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.tutor-msg.ai .tutor-avatar { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+.tutor-msg.user .tutor-avatar { background: linear-gradient(135deg, #0f766e, #0d9488); }
+.tutor-bubble {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 16px; font-size: 0.87rem; color: var(--text); line-height: 1.65;
+  max-width: 85%;
+}
+.tutor-msg.user .tutor-bubble { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.2); }
+.tutor-bubble code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.82rem; color: #93c5fd; }
+.tutor-bubble pre { background: rgba(0,0,0,0.35); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px; padding: 12px; overflow-x: auto; margin: 8px 0; }
+.tutor-bubble pre code { background: none; padding: 0; color: #93c5fd; font-size: 0.83rem; }
+.tutor-input-row {
+  display: flex; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.tutor-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 16px; color: var(--text); font-size: 0.87rem; outline: none; resize: none;
+  font-family: inherit; transition: border-color 0.2s; max-height: 120px;
+}
+.tutor-input:focus { border-color: #7c3aed; }
+.send-btn {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border: none;
+  border-radius: 10px; padding: 11px 18px; cursor: pointer; font-size: 0.87rem;
+  font-weight: 600; transition: opacity 0.2s; flex-shrink: 0;
+}
+.send-btn:hover { opacity: 0.85; }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.typing-indicator span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); margin: 0 2px; animation: bounce 1.2s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+/* EXERCISES */
+.exercise-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px 24px; transition: border-color 0.2s;
+}
+.exercise-card:hover { border-color: rgba(99,102,241,0.3); }
+.ex-badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 3px 9px;
+  border-radius: 10px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.ex-badge.easy { background: rgba(52,211,153,0.15); color: #34d399; }
+.ex-badge.medium { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.ex-badge.hard { background: rgba(248,113,113,0.15); color: #f87171; }
+.exercise-q { font-size: 0.93rem; color: var(--text); margin-bottom: 12px; line-height: 1.5; }
+.exercise-hint { font-size: 0.8rem; color: var(--text-muted); background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.15); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; display: none; }
+.code-input {
+  width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px; color: #93c5fd; font-family: 'Consolas', monospace;
+  font-size: 0.85rem; resize: vertical; min-height: 70px; outline: none; transition: border-color 0.2s;
+}
+.code-input:focus { border-color: #7c3aed; }
+.ex-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.btn-check {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border: none;
+  border-radius: 8px; padding: 8px 16px; font-size: 0.83rem; font-weight: 600;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.btn-check:hover { opacity: 0.85; }
+.btn-hint {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted);
+  border-radius: 8px; padding: 8px 14px; font-size: 0.82rem; cursor: pointer; transition: all 0.15s;
+}
+.btn-hint:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.ex-feedback { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.83rem; display: none; line-height: 1.5; }
+.ex-feedback.correct { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; }
+.ex-feedback.wrong { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: #fca5a5; }
+
+/* QUIZ */
+.quiz-setup { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+.quiz-select {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 8px 14px; font-size: 0.85rem; outline: none; cursor: pointer;
+}
+.btn-start-quiz {
+  background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none;
+  border-radius: 8px; padding: 8px 20px; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.btn-start-quiz:hover { opacity: 0.85; }
+.quiz-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; display: none; }
+.quiz-card.active { display: block; animation: fadeUp 0.25s ease; }
+.quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.quiz-counter { font-size: 0.8rem; color: var(--text-muted); }
+.quiz-score-badge { font-size: 0.8rem; font-weight: 700; color: var(--yellow); background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; padding: 3px 10px; }
+.quiz-q { font-size: 1rem; color: #fff; line-height: 1.5; margin-bottom: 20px; }
+.quiz-options { display: flex; flex-direction: column; gap: 10px; }
+.quiz-opt {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 16px; cursor: pointer; transition: all 0.15s; color: var(--text);
+  font-size: 0.88rem; text-align: left;
+}
+.quiz-opt:hover:not(:disabled) { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); }
+.quiz-opt.correct { background: rgba(52,211,153,0.15) !important; border-color: #34d399 !important; color: #6ee7b7 !important; }
+.quiz-opt.wrong { background: rgba(248,113,113,0.15) !important; border-color: #f87171 !important; color: #fca5a5 !important; }
+.quiz-opt:disabled { cursor: not-allowed; opacity: 0.7; }
+.quiz-explanation { margin-top: 14px; padding: 12px 16px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 10px; font-size: 0.83rem; color: var(--text-muted); display: none; line-height: 1.6; }
+.quiz-next-btn {
+  margin-top: 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff;
+  border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.87rem; font-weight: 700;
+  cursor: pointer; display: none; transition: opacity 0.2s;
+}
+.quiz-next-btn:hover { opacity: 0.85; }
+.quiz-result { text-align: center; padding: 32px; display: none; }
+.quiz-result.active { display: block; }
+.big-score { font-size: 4rem; font-weight: 800; margin-bottom: 8px; }
+.result-msg { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 20px; }
+.btn-retry { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+
+/* Progress bar */
+.progress-bar-wrap { background: rgba(255,255,255,0.07); border-radius: 99px; height: 6px; overflow: hidden; margin-top: 8px; }
+.progress-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #7c3aed, #4f46e5); transition: width 0.5s ease; }
+
+/* spinner */
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* Responsive */
+@media (max-width: 768px) { .sidebar { display: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-mark">🎓</div>
+    <div>
+      <div class="header-title">SQL Learning Lab</div>
+      <div class="header-sub">Learn SQL with AI — Interactive Lessons, Exercises & Quizzes</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="user-chip">{{ user_email }}</div>
+    <a href="/" class="btn-back-home">← Back to Assistant</a>
+  </div>
+</header>
+
+<div class="app-layout">
+
+  <!-- Sidebar: Topics -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Topics</div>
+    <button class="topic-btn active" onclick="selectTopic(this, 'SQL Basics', 'The foundation of SQL — SELECT, FROM, WHERE and core concepts.')" data-topic="SQL Basics">
+      <span class="topic-icon">📖</span>
+      <div class="topic-info"><div class="topic-name">SQL Basics</div><div class="topic-desc">SELECT, FROM, WHERE</div></div>
+      <span class="progress-pill" id="prog-SQL Basics">–</span>
+    </button>
+    <button class="topic-btn" onclick="selectTopic(this, 'Filtering & Sorting', 'WHERE conditions, AND/OR, ORDER BY, LIMIT.')" data-topic="Filtering & Sorting">
+      <span class="topic-icon">🔍</span>
+      <div class="topic-info"><div class="topic-name">Filtering & Sorting</div><div class="topic-desc">WHERE, ORDER BY, LIMIT</div></div>
+      <span class="progress-pill" id="prog-Filtering &amp; Sorting">–</span>
+    </button>
+    <button class="topic-btn" onclick="selectTopic(this, 'Joins', 'Combine data from multiple tables using JOINs.')" data-topic="Joins">
+      <span class="topic-icon">🔗</span>
+      <div class="topic-info"><div class="topic-name">Joins</div><div class="topic-desc">INNER, LEFT, RIGHT JOIN</div></div>
+      <span class="progress-pill" id="prog-Joins">–</span>
+    </button>
+    <button class="topic-btn" onclick="selectTopic(this, 'Aggregations', 'GROUP BY, COUNT, SUM, AVG, HAVING.')" data-topic="Aggregations">
+      <span class="topic-icon">📊</span>
+      <div class="topic-info"><div class="topic-name">Aggregations</div><div class="topic-desc">GROUP BY, COUNT, SUM</div></div>
+      <span class="progress-pill" id="prog-Aggregations">–</span>
+    </button>
+    <button class="topic-btn" onclick="selectTopic(this, 'Subqueries', 'Nested queries, correlated subqueries, EXISTS.')" data-topic="Subqueries">
+      <span class="topic-icon">🪆</span>
+      <div class="topic-info"><div class="topic-name">Subqueries</div><div class="topic-desc">Nested & correlated queries</div></div>
+      <span class="progress-pill" id="prog-Subqueries">–</span>
+    </button>
+    <button class="topic-btn" onclick="selectTopic(this, 'Data Manipulation', 'INSERT, UPDATE, DELETE operations.')" data-topic="Data Manipulation">
+      <span class="topic-icon">✏️</span>
+      <div class="topic-info"><div class="topic-name">Data Manipulation</div><div class="topic-desc">INSERT, UPDATE, DELETE</div></div>
+      <span class="progress-pill" id="prog-Data Manipulation">–</span>
+    </button>
+    <button class="topic-btn" onclick="selectTopic(this, 'Table Design', 'CREATE TABLE, data types, constraints.')" data-topic="Table Design">
+      <span class="topic-icon">🏗️</span>
+      <div class="topic-info"><div class="topic-name">Table Design</div><div class="topic-desc">CREATE, data types, keys</div></div>
+      <span class="progress-pill" id="prog-Table Design">–</span>
+    </button>
+    <button class="topic-btn" onclick="selectTopic(this, 'Indexes & Performance', 'Optimize queries with indexes and EXPLAIN.')" data-topic="Indexes & Performance">
+      <span class="topic-icon">⚡</span>
+      <div class="topic-info"><div class="topic-name">Indexes & Performance</div><div class="topic-desc">EXPLAIN, indexes</div></div>
+      <span class="progress-pill" id="prog-Indexes &amp; Performance">–</span>
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('lesson')">📚 Lesson</button>
+      <button class="tab-btn" onclick="switchTab('tutor')">🤖 AI Tutor</button>
+      <button class="tab-btn" onclick="switchTab('exercises')">💪 Exercises</button>
+      <button class="tab-btn" onclick="switchTab('quiz')">🎯 Quiz</button>
+    </div>
+
+    <!-- LESSON PANEL -->
+    <div class="panel active" id="panel-lesson">
+      <div class="lesson-hero">
+        <h2 id="lessonTitle">📖 SQL Basics</h2>
+        <p id="lessonDesc">The foundation of SQL — learn how to retrieve and filter data from databases.</p>
+        <div class="progress-bar-wrap" style="margin-top:14px;">
+          <div class="progress-bar-fill" id="lessonProgress" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="lesson-body" id="lessonContent">
+        <!-- dynamically filled -->
+      </div>
+    </div>
+
+    <!-- AI TUTOR PANEL -->
+    <div class="panel" id="panel-tutor">
+      <div class="tutor-container">
+        <div class="tutor-messages" id="tutorMessages">
+          <div class="tutor-msg ai">
+            <div class="tutor-avatar">🤖</div>
+            <div class="tutor-bubble">
+              👋 Hi! I'm your SQL tutor. Ask me anything about <strong id="tutorTopicLabel">SQL Basics</strong> — concepts, examples, or anything that's confusing. I'm here to help!
+            </div>
+          </div>
+        </div>
+        <div class="tutor-input-row">
+          <textarea class="tutor-input" id="tutorInput" placeholder="Ask the AI tutor anything..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askTutor();}"></textarea>
+          <button class="send-btn" id="tutorSendBtn" onclick="askTutor()">Ask →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXERCISES PANEL -->
+    <div class="panel" id="panel-exercises">
+      <div id="exerciseList"></div>
+    </div>
+
+    <!-- QUIZ PANEL -->
+    <div class="panel" id="panel-quiz">
+      <div class="quiz-setup">
+        <select class="quiz-select" id="quizDifficulty">
+          <option value="beginner">🟢 Beginner</option>
+          <option value="intermediate">🟡 Intermediate</option>
+          <option value="advanced">🔴 Advanced</option>
+        </select>
+        <button class="btn-start-quiz" onclick="startQuiz()">
+          🎯 Start Quiz
+        </button>
+        <span id="quizLoadMsg" style="color:var(--text-muted);font-size:0.83rem;"></span>
+      </div>
+      <div id="quizArea"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentTopic = 'SQL Basics';
+let progress = {};
+let quizState = { questions: [], current: 0, score: 0 };
+
+// ── Topics Data ──────────────────────────────────────────────────────────────
+const lessonData = {
+  'SQL Basics': {
+    intro: 'SQL (Structured Query Language) is how you talk to databases. It lets you retrieve, insert, update, and delete data.',
+    sections: [
+      { title: 'What is SQL?', body: 'SQL stands for Structured Query Language. It\'s used to communicate with relational databases like MySQL, PostgreSQL, and SQLite. Every interaction with a database — reading, writing, filtering — uses SQL.' },
+      { title: 'The SELECT Statement', body: 'SELECT is the most common SQL command. It retrieves data from a table.', sql: '<span class="kw">SELECT</span> first_name, last_name\n<span class="kw">FROM</span> employees;\n\n<span class="comment">-- Select all columns</span>\n<span class="kw">SELECT</span> * <span class="kw">FROM</span> employees;' },
+      { title: 'Column Aliases', body: 'You can rename columns in your output using AS.', sql: '<span class="kw">SELECT</span> first_name <span class="kw">AS</span> <span class="str-val">"First Name"</span>,\n       salary * <span class="num-val">12</span> <span class="kw">AS</span> annual_salary\n<span class="kw">FROM</span> employees;' },
+      { title: 'DISTINCT — Remove Duplicates', body: 'DISTINCT returns only unique values.', sql: '<span class="kw">SELECT DISTINCT</span> department\n<span class="kw">FROM</span> employees;' },
+    ]
+  },
+  'Filtering & Sorting': {
+    intro: 'Filter and sort your query results using WHERE, ORDER BY, and LIMIT.',
+    sections: [
+      { title: 'WHERE Clause', body: 'WHERE filters rows based on a condition.', sql: '<span class="kw">SELECT</span> * <span class="kw">FROM</span> employees\n<span class="kw">WHERE</span> department = <span class="str-val">\'Engineering\'</span>;\n\n<span class="kw">SELECT</span> * <span class="kw">FROM</span> products\n<span class="kw">WHERE</span> price &gt; <span class="num-val">100</span>;' },
+      { title: 'AND / OR / NOT', body: 'Combine multiple conditions.', sql: '<span class="kw">SELECT</span> * <span class="kw">FROM</span> employees\n<span class="kw">WHERE</span> department = <span class="str-val">\'Engineering\'</span>\n  <span class="kw">AND</span> salary &gt; <span class="num-val">60000</span>;\n\n<span class="kw">SELECT</span> * <span class="kw">FROM</span> products\n<span class="kw">WHERE</span> category = <span class="str-val">\'Books\'</span> <span class="kw">OR</span> price &lt; <span class="num-val">20</span>;' },
+      { title: 'ORDER BY', body: 'Sort results in ascending (default) or descending order.', sql: '<span class="kw">SELECT</span> name, salary\n<span class="kw">FROM</span> employees\n<span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>;\n\n<span class="comment">-- Sort by multiple columns</span>\n<span class="kw">ORDER BY</span> department <span class="kw">ASC</span>, salary <span class="kw">DESC</span>;' },
+      { title: 'LIMIT / OFFSET', body: 'Restrict the number of rows returned.', sql: '<span class="kw">SELECT</span> * <span class="kw">FROM</span> products\n<span class="kw">ORDER BY</span> price <span class="kw">DESC</span>\n<span class="kw">LIMIT</span> <span class="num-val">10</span>;\n\n<span class="comment">-- Skip first 20, get next 10</span>\n<span class="kw">LIMIT</span> <span class="num-val">10</span> <span class="kw">OFFSET</span> <span class="num-val">20</span>;' },
+    ]
+  },
+  'Joins': {
+    intro: 'Joins let you combine rows from two or more tables based on a related column.',
+    sections: [
+      { title: 'INNER JOIN', body: 'Returns only rows that have a match in both tables.', sql: '<span class="kw">SELECT</span> o.id, c.name, o.total\n<span class="kw">FROM</span> orders o\n<span class="kw">INNER JOIN</span> customers c\n  <span class="kw">ON</span> o.customer_id = c.id;' },
+      { title: 'LEFT JOIN', body: 'Returns all rows from the left table, and matched rows from the right. Unmatched right rows show NULL.', sql: '<span class="kw">SELECT</span> c.name, o.total\n<span class="kw">FROM</span> customers c\n<span class="kw">LEFT JOIN</span> orders o\n  <span class="kw">ON</span> c.id = o.customer_id;\n<span class="comment">-- Customers with no orders will show NULL for total</span>' },
+      { title: 'RIGHT JOIN', body: 'Returns all rows from the right table, and matched rows from the left.', sql: '<span class="kw">SELECT</span> c.name, o.id\n<span class="kw">FROM</span> orders o\n<span class="kw">RIGHT JOIN</span> customers c\n  <span class="kw">ON</span> o.customer_id = c.id;' },
+    ]
+  },
+  'Aggregations': {
+    intro: 'Aggregate functions compute summary values across rows.',
+    sections: [
+      { title: 'COUNT, SUM, AVG, MIN, MAX', body: 'Basic aggregate functions work on a set of values.', sql: '<span class="kw">SELECT</span>\n  <span class="kw">COUNT</span>(*) <span class="kw">AS</span> total_employees,\n  <span class="kw">AVG</span>(salary) <span class="kw">AS</span> avg_salary,\n  <span class="kw">MAX</span>(salary) <span class="kw">AS</span> top_salary,\n  <span class="kw">MIN</span>(salary) <span class="kw">AS</span> lowest_salary\n<span class="kw">FROM</span> employees;' },
+      { title: 'GROUP BY', body: 'Group rows with the same value and apply aggregates per group.', sql: '<span class="kw">SELECT</span> department, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> count,\n       <span class="kw">AVG</span>(salary) <span class="kw">AS</span> avg_salary\n<span class="kw">FROM</span> employees\n<span class="kw">GROUP BY</span> department;' },
+      { title: 'HAVING', body: 'HAVING filters the result of GROUP BY (like WHERE but for groups).', sql: '<span class="kw">SELECT</span> department, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> headcount\n<span class="kw">FROM</span> employees\n<span class="kw">GROUP BY</span> department\n<span class="kw">HAVING</span> <span class="kw">COUNT</span>(*) &gt; <span class="num-val">5</span>;' },
+    ]
+  },
+  'Subqueries': {
+    intro: 'A subquery is a query nested inside another query.',
+    sections: [
+      { title: 'Subquery in WHERE', body: 'Use a subquery to filter with a dynamic value.', sql: '<span class="kw">SELECT</span> name, salary\n<span class="kw">FROM</span> employees\n<span class="kw">WHERE</span> salary &gt; (\n  <span class="kw">SELECT AVG</span>(salary) <span class="kw">FROM</span> employees\n);' },
+      { title: 'Subquery in FROM', body: 'Treat a subquery as a temporary table (derived table).', sql: '<span class="kw">SELECT</span> dept, avg_sal\n<span class="kw">FROM</span> (\n  <span class="kw">SELECT</span> department <span class="kw">AS</span> dept,\n         <span class="kw">AVG</span>(salary) <span class="kw">AS</span> avg_sal\n  <span class="kw">FROM</span> employees\n  <span class="kw">GROUP BY</span> department\n) dept_stats\n<span class="kw">WHERE</span> avg_sal &gt; <span class="num-val">70000</span>;' },
+      { title: 'EXISTS', body: 'EXISTS checks whether a subquery returns any rows.', sql: '<span class="kw">SELECT</span> c.name\n<span class="kw">FROM</span> customers c\n<span class="kw">WHERE EXISTS</span> (\n  <span class="kw">SELECT</span> <span class="num-val">1</span> <span class="kw">FROM</span> orders o\n  <span class="kw">WHERE</span> o.customer_id = c.id\n);' },
+    ]
+  },
+  'Data Manipulation': {
+    intro: 'INSERT, UPDATE, and DELETE let you modify data in your database.',
+    sections: [
+      { title: 'INSERT INTO', body: 'Add new rows to a table.', sql: '<span class="kw">INSERT INTO</span> employees (name, department, salary)\n<span class="kw">VALUES</span> (<span class="str-val">\'Alice Smith\'</span>, <span class="str-val">\'Engineering\'</span>, <span class="num-val">75000</span>);\n\n<span class="comment">-- Insert multiple rows</span>\n<span class="kw">INSERT INTO</span> employees (name, salary)\n<span class="kw">VALUES</span> (<span class="str-val">\'Bob\'</span>, <span class="num-val">65000</span>), (<span class="str-val">\'Carol\'</span>, <span class="num-val">70000</span>);' },
+      { title: 'UPDATE', body: 'Modify existing rows. Always use WHERE or you\'ll update all rows!', sql: '<span class="kw">UPDATE</span> employees\n<span class="kw">SET</span> salary = salary * <span class="num-val">1.10</span>\n<span class="kw">WHERE</span> department = <span class="str-val">\'Engineering\'</span>;\n\n<span class="comment">-- ⚠️ Without WHERE, ALL rows are updated</span>' },
+      { title: 'DELETE', body: 'Remove rows from a table. Always use WHERE!', sql: '<span class="kw">DELETE FROM</span> employees\n<span class="kw">WHERE</span> id = <span class="num-val">42</span>;\n\n<span class="comment">-- Delete all rows in a department</span>\n<span class="kw">DELETE FROM</span> employees\n<span class="kw">WHERE</span> department = <span class="str-val">\'Temp\'</span>;' },
+    ]
+  },
+  'Table Design': {
+    intro: 'Design database tables with proper data types, primary keys, and constraints.',
+    sections: [
+      { title: 'CREATE TABLE', body: 'Define a new table with columns and types.', sql: '<span class="kw">CREATE TABLE</span> products (\n  id        <span class="kw">INT</span> <span class="kw">AUTO_INCREMENT PRIMARY KEY</span>,\n  name      <span class="kw">VARCHAR</span>(<span class="num-val">255</span>) <span class="kw">NOT NULL</span>,\n  price     <span class="kw">DECIMAL</span>(<span class="num-val">10</span>,<span class="num-val">2</span>),\n  created_at <span class="kw">DATETIME DEFAULT CURRENT_TIMESTAMP</span>\n);' },
+      { title: 'Common Data Types', body: 'INT, VARCHAR, TEXT, DECIMAL, DATE, DATETIME, BOOLEAN — choose based on your data.', sql: '<span class="comment">-- Numbers</span>\n<span class="kw">INT</span>, <span class="kw">BIGINT</span>, <span class="kw">DECIMAL</span>(<span class="num-val">10</span>,<span class="num-val">2</span>), <span class="kw">FLOAT</span>\n\n<span class="comment">-- Text</span>\n<span class="kw">VARCHAR</span>(<span class="num-val">255</span>), <span class="kw">TEXT</span>, <span class="kw">CHAR</span>(<span class="num-val">10</span>)\n\n<span class="comment">-- Dates</span>\n<span class="kw">DATE</span>, <span class="kw">DATETIME</span>, <span class="kw">TIMESTAMP</span>' },
+      { title: 'Foreign Keys', body: 'Link tables together with foreign key constraints.', sql: '<span class="kw">CREATE TABLE</span> orders (\n  id          <span class="kw">INT PRIMARY KEY AUTO_INCREMENT</span>,\n  customer_id <span class="kw">INT NOT NULL</span>,\n  total       <span class="kw">DECIMAL</span>(<span class="num-val">10</span>,<span class="num-val">2</span>),\n  <span class="kw">FOREIGN KEY</span> (customer_id)\n    <span class="kw">REFERENCES</span> customers(id)\n    <span class="kw">ON DELETE CASCADE</span>\n);' },
+    ]
+  },
+  'Indexes & Performance': {
+    intro: 'Indexes dramatically speed up queries on large tables.',
+    sections: [
+      { title: 'What is an Index?', body: 'An index is like the index of a book — it lets MySQL find rows without scanning every row. Use indexes on columns used in WHERE, JOIN, and ORDER BY.', sql: '<span class="comment">-- Create a regular index</span>\n<span class="kw">CREATE INDEX</span> idx_email\n  <span class="kw">ON</span> users(email);\n\n<span class="comment">-- Unique index</span>\n<span class="kw">CREATE UNIQUE INDEX</span> idx_unique_email\n  <span class="kw">ON</span> users(email);' },
+      { title: 'EXPLAIN', body: 'Use EXPLAIN to see how MySQL executes a query — essential for optimization.', sql: '<span class="kw">EXPLAIN SELECT</span> * <span class="kw">FROM</span> orders\n<span class="kw">WHERE</span> customer_id = <span class="num-val">42</span>;\n\n<span class="comment">-- Look at: type, key, rows columns</span>\n<span class="comment">-- type=ALL means full table scan (slow)</span>\n<span class="comment">-- type=ref means index is used (fast)</span>' },
+    ]
+  }
+};
+
+const exerciseData = {
+  'SQL Basics': [
+    { diff: 'easy', q: 'Write a query to get all columns from a table called "customers".', hint: 'Use SELECT * FROM ...', expected: 'SELECT * FROM customers' },
+    { diff: 'easy', q: 'Write a query to get only the "name" and "email" columns from the "users" table.', hint: 'List the columns you want after SELECT', expected: 'SELECT name, email FROM users' },
+    { diff: 'medium', q: 'Write a query to get unique departments from the "employees" table.', hint: 'Use DISTINCT keyword', expected: 'SELECT DISTINCT department FROM employees' },
+  ],
+  'Filtering & Sorting': [
+    { diff: 'easy', q: 'Get all employees where salary is greater than 50000.', hint: 'Use WHERE salary > ...', expected: 'SELECT * FROM employees WHERE salary > 50000' },
+    { diff: 'medium', q: 'Get the top 5 most expensive products, sorted by price descending.', hint: 'Use ORDER BY ... DESC and LIMIT', expected: 'SELECT * FROM products ORDER BY price DESC LIMIT 5' },
+    { diff: 'hard', q: 'Get employees in the Engineering department with salary between 60000 and 90000.', hint: 'Use WHERE with AND, or BETWEEN', expected: 'SELECT * FROM employees WHERE department = \'Engineering\' AND salary BETWEEN 60000 AND 90000' },
+  ],
+  'Joins': [
+    { diff: 'medium', q: 'Write a query to join "orders" and "customers" tables to show each order with the customer name. Orders have a customer_id column.', hint: 'Use INNER JOIN ... ON orders.customer_id = customers.id', expected: 'SELECT orders.id, customers.name, orders.total FROM orders INNER JOIN customers ON orders.customer_id = customers.id' },
+    { diff: 'hard', q: 'Get all customers even if they have no orders (show NULL for order details).', hint: 'Use LEFT JOIN — customers is the left table', expected: 'SELECT customers.name, orders.total FROM customers LEFT JOIN orders ON customers.id = orders.customer_id' },
+  ],
+  'Aggregations': [
+    { diff: 'easy', q: 'Count the total number of rows in the "orders" table.', hint: 'Use COUNT(*)', expected: 'SELECT COUNT(*) FROM orders' },
+    { diff: 'medium', q: 'Find the average salary per department from the "employees" table.', hint: 'Use GROUP BY with AVG()', expected: 'SELECT department, AVG(salary) FROM employees GROUP BY department' },
+    { diff: 'hard', q: 'Find departments with more than 10 employees.', hint: 'Use GROUP BY with HAVING COUNT(*) > 10', expected: 'SELECT department, COUNT(*) FROM employees GROUP BY department HAVING COUNT(*) > 10' },
+  ],
+  'Subqueries': [
+    { diff: 'medium', q: 'Find all employees who earn above the average salary.', hint: 'Use a subquery: WHERE salary > (SELECT AVG(salary) FROM employees)', expected: 'SELECT * FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)' },
+  ],
+  'Data Manipulation': [
+    { diff: 'easy', q: 'Insert a new product with name "Laptop" and price 999.99 into the "products" table.', hint: 'Use INSERT INTO ... VALUES (...)', expected: "INSERT INTO products (name, price) VALUES ('Laptop', 999.99)" },
+    { diff: 'medium', q: 'Update the price of all products in category "Electronics" to increase by 10%.', hint: 'UPDATE ... SET price = price * 1.10 WHERE ...', expected: "UPDATE products SET price = price * 1.10 WHERE category = 'Electronics'" },
+    { diff: 'hard', q: 'Delete all orders that were placed before 2023-01-01.', hint: 'DELETE FROM ... WHERE order_date < ...', expected: "DELETE FROM orders WHERE order_date < '2023-01-01'" },
+  ],
+  'Table Design': [
+    { diff: 'medium', q: 'Write CREATE TABLE for a "products" table with: id (auto-increment primary key), name (varchar 255, not null), price (decimal), created_at (datetime).', hint: 'Remember AUTO_INCREMENT PRIMARY KEY and NOT NULL', expected: 'CREATE TABLE products (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, price DECIMAL(10,2), created_at DATETIME)' },
+  ],
+  'Indexes & Performance': [
+    { diff: 'easy', q: 'Create an index called "idx_email" on the "email" column of the "users" table.', hint: 'Use CREATE INDEX ... ON table(column)', expected: 'CREATE INDEX idx_email ON users(email)' },
+  ]
+};
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  loadLesson('SQL Basics');
+  loadExercises('SQL Basics');
+  await loadProgress();
+});
+
+async function loadProgress() {
+  try {
+    const r = await fetch('/api/learn/progress');
+    progress = await r.json();
+    // Update pills
+    document.querySelectorAll('.topic-btn').forEach(btn => {
+      const t = btn.dataset.topic;
+      const p = progress[t];
+      const pill = document.getElementById('prog-' + t);
+      if (pill && p) {
+        pill.textContent = p.completed ? '✓' : (p.score + '%');
+        if (p.completed) pill.classList.add('done');
+      } else if (pill) {
+        pill.textContent = '–';
+      }
+    });
+  } catch(e) {}
+}
+
+// ── Topic Selection ──────────────────────────────────────────────────────────
+function selectTopic(btn, topic, desc) {
+  document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTopic = topic;
+  loadLesson(topic);
+  loadExercises(topic);
+  document.getElementById('tutorTopicLabel').textContent = topic;
+  // Add a context message to tutor
+  const msgs = document.getElementById('tutorMessages');
+  const ctx = document.createElement('div');
+  ctx.className = 'tutor-msg ai';
+  ctx.innerHTML = `<div class="tutor-avatar">🤖</div><div class="tutor-bubble">
+    Switched to <strong>${topic}</strong>. Ask me anything about this topic! 💡</div>`;
+  msgs.appendChild(ctx);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── Tab Switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ── Lesson ───────────────────────────────────────────────────────────────────
+function loadLesson(topic) {
+  const data = lessonData[topic];
+  if (!data) return;
+  document.getElementById('lessonTitle').textContent = getLessonEmoji(topic) + ' ' + topic;
+  document.getElementById('lessonDesc').textContent = data.intro;
+  const p = progress[topic];
+  document.getElementById('lessonProgress').style.width = (p ? Math.min(100, p.score) : 0) + '%';
+  let html = '';
+  data.sections.forEach(s => {
+    html += `<h3>${s.title}</h3><p>${s.body}</p>`;
+    if (s.sql) html += `<div class="sql-example">${s.sql}</div>`;
+  });
+  document.getElementById('lessonContent').innerHTML = html;
+  // Mark as 30% progress just for viewing
+  if (!p || p.score < 30) saveProgress(topic, 30, false);
+}
+
+function getLessonEmoji(topic) {
+  const map = {'SQL Basics':'📖','Filtering & Sorting':'🔍','Joins':'🔗','Aggregations':'📊','Subqueries':'🪆','Data Manipulation':'✏️','Table Design':'🏗️','Indexes & Performance':'⚡'};
+  return map[topic] || '📚';
+}
+
+// ── AI Tutor ─────────────────────────────────────────────────────────────────
+async function askTutor() {
+  const input = document.getElementById('tutorInput');
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+  const msgs = document.getElementById('tutorMessages');
+  // User message
+  const userMsg = document.createElement('div');
+  userMsg.className = 'tutor-msg user';
+  userMsg.innerHTML = `<div class="tutor-avatar">👤</div><div class="tutor-bubble">${escHtml(question)}</div>`;
+  msgs.appendChild(userMsg);
+  // Typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'tutor-msg ai'; typing.id = 'typing';
+  typing.innerHTML = `<div class="tutor-avatar">🤖</div><div class="tutor-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('tutorSendBtn').disabled = true;
+  try {
+    const r = await fetch('/api/learn/ask', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({question, topic: currentTopic})});
+    const d = await r.json();
+    document.getElementById('typing')?.remove();
+    const aiMsg = document.createElement('div');
+    aiMsg.className = 'tutor-msg ai';
+    aiMsg.innerHTML = `<div class="tutor-avatar">🤖</div><div class="tutor-bubble">${formatTutorResponse(d.response || d.error)}</div>`;
+    msgs.appendChild(aiMsg);
+  } catch(e) {
+    document.getElementById('typing')?.remove();
+    const errMsg = document.createElement('div');
+    errMsg.className = 'tutor-msg ai';
+    errMsg.innerHTML = `<div class="tutor-avatar">🤖</div><div class="tutor-bubble" style="color:#f87171;">Sorry, I had an error. Please try again.</div>`;
+    msgs.appendChild(errMsg);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('tutorSendBtn').disabled = false;
+  input.focus();
+}
+
+function formatTutorResponse(text) {
+  if (!text) return '';
+  // Format code blocks
+  text = text.replace(/```sql([\s\S]*?)```/gi, '<pre><code>$1</code></pre>');
+  text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Newlines
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+// ── Exercises ────────────────────────────────────────────────────────────────
+function loadExercises(topic) {
+  const exercises = exerciseData[topic] || [];
+  const list = document.getElementById('exerciseList');
+  if (!exercises.length) {
+    list.innerHTML = `<div style="color:var(--text-muted);padding:40px;text-align:center;">No exercises yet for this topic. Ask the AI Tutor for practice problems!</div>`;
+    return;
+  }
+  list.innerHTML = exercises.map((ex, i) => `
+    <div class="exercise-card" id="ex-${i}">
+      <span class="ex-badge ${ex.diff}">${ex.diff}</span>
+      <div class="exercise-q">💡 ${escHtml(ex.q)}</div>
+      <div class="exercise-hint" id="hint-${i}">💡 Hint: ${escHtml(ex.hint)}</div>
+      <textarea class="code-input" id="answer-${i}" placeholder="Write your SQL here..."></textarea>
+      <div class="ex-actions">
+        <button class="btn-check" onclick="checkAnswer(${i})">✔ Check Answer</button>
+        <button class="btn-hint" onclick="toggleHint(${i})">💡 Hint</button>
+      </div>
+      <div class="ex-feedback" id="feedback-${i}"></div>
+    </div>
+  `).join('');
+}
+
+function toggleHint(i) {
+  const hint = document.getElementById(`hint-${i}`);
+  hint.style.display = hint.style.display === 'none' || !hint.style.display ? 'block' : 'none';
+}
+
+async function checkAnswer(i) {
+  const exercises = exerciseData[currentTopic] || [];
+  const ex = exercises[i];
+  const answer = document.getElementById(`answer-${i}`).value.trim();
+  const feedback = document.getElementById(`feedback-${i}`);
+  if (!answer) { feedback.style.display='block'; feedback.className='ex-feedback wrong'; feedback.textContent='Please write your answer first.'; return; }
+  feedback.style.display='block'; feedback.className='ex-feedback'; feedback.innerHTML='<div class="spinner"></div> Checking...';
+  try {
+    const r = await fetch('/api/learn/check-answer', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({question: ex.q, answer, expected: ex.expected})});
+    const d = await r.json();
+    feedback.className = 'ex-feedback ' + (d.correct ? 'correct' : 'wrong');
+    feedback.innerHTML = d.correct
+      ? `✅ <strong>Correct!</strong> ${escHtml(d.feedback || 'Great job!')}`
+      : `❌ <strong>Not quite.</strong> ${escHtml(d.feedback || '')}` + (d.correct_answer ? `<br><br><strong>Suggested answer:</strong><br><code style="font-size:0.82rem;color:#93c5fd;">${escHtml(d.correct_answer)}</code>` : '');
+    if (d.correct) saveProgress(currentTopic, 70, false);
+  } catch(e) { feedback.className='ex-feedback wrong'; feedback.textContent='Could not check. Please try again.'; }
+}
+
+// ── Quiz ─────────────────────────────────────────────────────────────────────
+async function startQuiz() {
+  const difficulty = document.getElementById('quizDifficulty').value;
+  const msg = document.getElementById('quizLoadMsg');
+  msg.innerHTML = '<div class="spinner"></div> Generating quiz...';
+  try {
+    const r = await fetch('/api/learn/generate-quiz', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({topic: currentTopic, difficulty})});
+    const d = await r.json();
+    if (d.error || !d.questions?.length) { msg.textContent = 'Could not load quiz. Try again.'; return; }
+    msg.textContent = '';
+    quizState = { questions: d.questions, current: 0, score: 0 };
+    renderQuizQuestion();
+  } catch(e) { msg.textContent = 'Network error.'; }
+}
+
+function renderQuizQuestion() {
+  const area = document.getElementById('quizArea');
+  const { questions, current, score } = quizState;
+  if (current >= questions.length) {
+    const pct = Math.round((score / questions.length) * 100);
+    const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '🎉' : '💪';
+    const msg = pct >= 80 ? 'Excellent work!' : pct >= 60 ? 'Good job!' : 'Keep practicing!';
+    area.innerHTML = `
+      <div class="quiz-result active">
+        <div class="big-score" style="color:${pct>=80?'#34d399':pct>=60?'#fbbf24':'#f87171'}">${emoji} ${pct}%</div>
+        <div class="result-msg">${score}/${questions.length} correct — ${msg}</div>
+        <button class="btn-retry" onclick="startQuiz()">🔄 Try Again</button>
+      </div>`;
+    saveProgress(currentTopic, pct, pct >= 80);
+    return;
+  }
+  const q = questions[current];
+  area.innerHTML = `
+    <div class="quiz-card active">
+      <div class="quiz-meta">
+        <span class="quiz-counter">Question ${current+1} of ${questions.length}</span>
+        <span class="quiz-score-badge">Score: ${score}/${current}</span>
+      </div>
+      <div class="quiz-q">${escHtml(q.question)}</div>
+      <div class="quiz-options" id="quizOptions">
+        ${q.options.map((opt, i) => `<button class="quiz-opt" onclick="selectAnswer(${i})">${escHtml(opt)}</button>`).join('')}
+      </div>
+      <div class="quiz-explanation" id="quizExplanation">${escHtml(q.explanation || '')}</div>
+      <button class="quiz-next-btn" id="quizNextBtn" onclick="nextQuestion()">Next →</button>
+    </div>`;
+}
+
+function selectAnswer(idx) {
+  const q = quizState.questions[quizState.current];
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach(o => o.disabled = true);
+  opts[idx].classList.add(idx === q.correct ? 'correct' : 'wrong');
+  if (idx !== q.correct) opts[q.correct].classList.add('correct');
+  if (idx === q.correct) quizState.score++;
+  document.getElementById('quizExplanation').style.display = 'block';
+  document.getElementById('quizNextBtn').style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  quizState.current++;
+  renderQuizQuestion();
+}
+
+// ── Progress Save ────────────────────────────────────────────────────────────
+async function saveProgress(topic, score, completed) {
+  try {
+    await fetch('/api/learn/save-progress', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({topic, score, completed})});
+    if (!progress[topic] || score > (progress[topic]?.score || 0)) {
+      progress[topic] = {score, completed, last_attempt: new Date().toISOString()};
+    }
+    const pill = document.getElementById('prog-' + topic);
+    if (pill) { pill.textContent = completed ? '✓' : (score + '%'); if (completed) pill.classList.add('done'); }
+  } catch(e) {}
+}
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
